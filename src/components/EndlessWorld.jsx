@@ -4,6 +4,76 @@ import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { useGameStore } from '../store/useGameStore';
 import * as THREE from 'three';
 
+// Glowing expanding rings effect for jumps/collects
+const ExpandingPulse = ({ position, color = "#ff007f" }) => {
+  const ringRef = useRef();
+
+  useFrame((state, delta) => {
+    if (ringRef.current) {
+      ringRef.current.scale.addScalar(delta * 4.0);
+      if (ringRef.current.material) {
+        ringRef.current.material.opacity = THREE.MathUtils.lerp(
+          ringRef.current.material.opacity,
+          0,
+          0.08
+        );
+      }
+    }
+  });
+
+  return (
+    <mesh ref={ringRef} position={position} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[0.1, 0.8, 32]} />
+      <meshBasicMaterial 
+        color={color} 
+        transparent 
+        opacity={0.8} 
+        toneMapped={false}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  );
+};
+
+// Kinematically animated bobbing platform
+const FloatingPlatform = ({ plat }) => {
+  const rb = useRef();
+  const initialY = plat.pos[1];
+
+  useFrame((state) => {
+    if (rb.current) {
+      const t = state.clock.getElapsedTime();
+      // Smooth sinusoidal bobbing based on its X position
+      const bobY = initialY + Math.sin(t * 2.0 + plat.pos[0] * 0.4) * 0.45;
+      rb.current.setNextKinematicTranslation({
+        x: plat.pos[0],
+        y: bobY,
+        z: plat.pos[2]
+      });
+    }
+  });
+
+  const halfExtents = [plat.size[0] / 2, plat.size[1] / 2, plat.size[2] / 2];
+
+  return (
+    <RigidBody ref={rb} type="kinematicPosition" colliders={false}>
+      <mesh receiveShadow>
+        <boxGeometry args={plat.size} />
+        <meshStandardMaterial 
+          color={plat.color} 
+          roughness={0.2}
+          metalness={0.9}
+          emissive="#00f0ff"
+          emissiveIntensity={1.5}
+        />
+      </mesh>
+      <CuboidCollider args={halfExtents} />
+      {/* Under-light neon glow */}
+      <pointLight position={[0, -0.4, 0]} intensity={3.0} color="#00f0ff" distance={8} decay={1.5} />
+    </RigidBody>
+  );
+};
+
 // Coin Component with custom rotation & neon local pointLight
 const Coin = ({ position, onCollect }) => {
   const meshRef = useRef();
@@ -78,7 +148,7 @@ const Crate = ({ position }) => {
 };
 
 // Trampoline Jump Pad Component (Vertical Launcher)
-const Trampoline = ({ position }) => {
+const Trampoline = ({ position, onLaunch }) => {
   const handleJump = (event) => {
     if (event.other && event.other.rigidBody) {
       // Clear vertical velocity to guarantee consistent launching power
@@ -86,6 +156,7 @@ const Trampoline = ({ position }) => {
       event.other.rigidBody.setLinvel({ x: currentVel.x, y: 0, z: currentVel.z }, true);
       // Apply upward vertical impulse
       event.other.rigidBody.applyImpulse({ x: 0, y: 15.0, z: 0 }, true);
+      if (onLaunch) onLaunch();
     }
   };
 
@@ -135,7 +206,14 @@ export const EndlessWorld = () => {
     trampolines: []
   });
 
+  const [visualEffects, setVisualEffects] = useState([]);
+
   const lastSpawnedX = useRef(12.5); // End of the initial starting platform
+
+  const spawnEffect = (pos, color) => {
+    const id = Math.random().toString();
+    setVisualEffects((prev) => [...prev, { id, pos, color, time: Date.now() }]);
+  };
 
   // Reset world when game restarts
   useEffect(() => {
@@ -152,6 +230,7 @@ export const EndlessWorld = () => {
         crates: [],
         trampolines: []
       });
+      setVisualEffects([]);
       lastSpawnedX.current = 12.5;
     }
   }, [gameState]);
@@ -161,6 +240,9 @@ export const EndlessWorld = () => {
 
     const px = playerPosition.x;
     
+    // Prune expired FX rings
+    setVisualEffects((prev) => prev.filter((eff) => Date.now() - eff.time < 1000));
+
     // Spawn ahead: if player is within 30 units of the last spawned position, generate a new chunk
     if (px + 30 > lastSpawnedX.current) {
       const chunkWidth = 15;
@@ -281,18 +363,24 @@ export const EndlessWorld = () => {
     }
   });
 
-  const handleCoinCollect = (coinId) => {
+  const handleCoinCollect = (coinId, coinPos) => {
     setWorldData((prev) => ({
       ...prev,
       coins: prev.coins.map((c) => (c.id === coinId ? { ...c, collected: true } : c))
     }));
     addPoints(10);
+    spawnEffect([coinPos[0], coinPos[1], coinPos[2] || 0], "#FFD700");
   };
 
   return (
     <>
       {/* Platforms */}
       {worldData.platforms.map((plat) => {
+        // If it's the neon blue floating platform, render the dynamic Kinematic Bobbing platform!
+        if (plat.color === '#3b82f6') {
+          return <FloatingPlatform key={plat.id} plat={plat} />;
+        }
+
         const halfExtents = [plat.size[0] / 2, plat.size[1] / 2, plat.size[2] / 2];
         return (
           <RigidBody key={plat.id} type="fixed" position={plat.pos} colliders={false}>
@@ -318,7 +406,7 @@ export const EndlessWorld = () => {
           <Coin 
             key={coin.id} 
             position={coin.pos} 
-            onCollect={() => handleCoinCollect(coin.id)} 
+            onCollect={() => handleCoinCollect(coin.id, coin.pos)} 
           />
         ))}
 
@@ -339,11 +427,21 @@ export const EndlessWorld = () => {
         />
       ))}
 
-      {/* Trampolines */}
+      {/* Trampolines with FX pulse spawn hook */}
       {(worldData.trampolines || []).map((tramp) => (
         <Trampoline 
           key={tramp.id} 
           position={tramp.pos} 
+          onLaunch={() => spawnEffect(tramp.pos, "#ec4899")}
+        />
+      ))}
+
+      {/* Glowing Rings FX Systems */}
+      {visualEffects.map((eff) => (
+        <ExpandingPulse 
+          key={eff.id} 
+          position={eff.pos} 
+          color={eff.color} 
         />
       ))}
     </>

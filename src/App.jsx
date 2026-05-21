@@ -6,6 +6,7 @@ import { Visuals } from './components/Visuals';
 import { ParallaxBackground } from './components/ParallaxBackground';
 import { useGameStore } from './store/useGameStore';
 import { Heart, Trophy, Zap, RefreshCw, Play } from 'lucide-react';
+import * as THREE from 'three';
 import './App.css';
 
 const keyboardMap = [
@@ -111,10 +112,18 @@ function App() {
         )}
 
         {/* ========================================================
-            4. THE 3D CANVAS WORLD
+            4. THE 3D CANVAS WORLD WITH HIGH-FIDELITY HDR CONFIG
            ======================================================== */}
         <div className={`canvas-wrapper ${gameState !== 'PLAYING' ? 'blurred' : ''}`}>
-          <Canvas shadows>
+          <Canvas 
+            shadows 
+            gl={{ 
+              antialias: true, 
+              powerPreference: "high-performance",
+              toneMapping: THREE.AgXToneMapping, 
+              toneMappingExposure: 1.45
+            }}
+          >
             <Scene>
               <Visuals />
               {dimension === '2D' && (
