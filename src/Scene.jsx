@@ -1,9 +1,11 @@
-import { PerspectiveCamera, OrthographicCamera, Environment } from '@react-three/drei';
+import { PerspectiveCamera, Environment } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { useGameStore } from './store/useGameStore';
 import { Suspense, useRef, useMemo } from 'react';
 import { EndlessWorld } from './components/EndlessWorld';
 import { CameraController } from './components/CameraController';
+import { ParticleSystem } from './components/ParticleSystem';
+import { Parallax3DBackground } from './components/Parallax3DBackground';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -12,7 +14,6 @@ import * as THREE from 'three';
 // ----------------------------------------------------
 const GlowingDust = ({ count = 70 }) => {
   const mesh = useRef();
-  const playerPosition = useGameStore((state) => state.playerPosition);
 
   // Generate random initial positions & speeds for dust particles
   const particles = useMemo(() => {
@@ -36,7 +37,7 @@ const GlowingDust = ({ count = 70 }) => {
   useFrame((state) => {
     if (!mesh.current) return;
     const t = state.clock.getElapsedTime();
-    const px = playerPosition.x;
+    const px = useGameStore.getState().playerPosition.x;
 
     particles.forEach((p, i) => {
       // Drift the particles slowly
@@ -70,95 +71,19 @@ const GlowingDust = ({ count = 70 }) => {
   );
 };
 
-// ----------------------------------------------------
-// Cyberpunk Sweeping Searchlight Component
-// ----------------------------------------------------
-const Searchlight = ({ position, rotationSpeed = 0.5, color = "#ff007f", angleOffset = 0 }) => {
+export const Scene = ({ children }) => {
   const lightRef = useRef();
-  const coneRef = useRef();
 
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime() * rotationSpeed + angleOffset;
-    // Sweep back and forth
-    const angleX = Math.sin(t) * 0.4;
-    const angleZ = Math.cos(t * 0.6) * 0.3;
-
+  useFrame(() => {
     if (lightRef.current) {
-      lightRef.current.target.position.set(
-        position[0] + Math.sin(angleX) * 15,
-        0,
-        position[2] + Math.sin(angleZ) * 15
-      );
-      lightRef.current.target.updateMatrixWorld();
-    }
-
-    if (coneRef.current) {
-      coneRef.current.rotation.z = angleX;
-      coneRef.current.rotation.x = angleZ;
+      const px = useGameStore.getState().playerPosition.x;
+      lightRef.current.position.set(px - 10, 18, 8);
     }
   });
 
   return (
-    <group position={position}>
-      {/* Light Mesh projector base */}
-      <mesh castShadow>
-        <cylinderGeometry args={[0.2, 0.35, 0.5, 12]} />
-        <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.1} />
-      </mesh>
-      {/* Glowing physical projector lens */}
-      <mesh position={[0, 0.25, 0]}>
-        <sphereGeometry args={[0.22, 12, 12]} />
-        <meshStandardMaterial color={color} toneMapped={false} emissive={color} emissiveIntensity={2.0} />
-      </mesh>
-
-      {/* Actual Spotlight Source */}
-      <spotLight 
-        ref={lightRef}
-        position={[0, 0.25, 0]}
-        angle={0.3}
-        penumbra={0.9}
-        intensity={25}
-        color={color}
-        distance={30}
-      />
-      
-      {/* Visual glowing light shaft cone */}
-      <group ref={coneRef}>
-        <mesh position={[0, 5, 0]} rotation={[0, 0, 0]}>
-          <coneGeometry args={[1.5, 10, 16, 1, true]} />
-          <meshBasicMaterial 
-            color={color} 
-            transparent 
-            opacity={0.08} 
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      </group>
-    </group>
-  );
-};
-
-export const Scene = ({ children }) => {
-  const dimension = useGameStore((state) => state.dimension);
-  const playerPosition = useGameStore((state) => state.playerPosition);
-
-  // Position the shadow-casting directional light relative to the player
-  // to ensure shadow maps remain high-resolution and never clip out along the infinite track.
-  const lightPosition = [playerPosition.x - 10, 18, 8];
-
-  // We align searchlights in the background relative to the player so they sweep along dynamically as you run!
-  const searchlightPinkPos = [playerPosition.x + 12, -0.9, -4.5];
-  const searchlightCyanPos = [playerPosition.x - 6, -0.9, 4.5];
-
-  return (
     <>
-      {dimension === '3D' ? (
-        <PerspectiveCamera makeDefault position={[5, 5, 10]} fov={50} />
-      ) : (
-        <OrthographicCamera makeDefault position={[0, 0, 10]} zoom={50} />
-      )}
+      <PerspectiveCamera makeDefault position={[5, 5, 10]} fov={50} />
 
       {/* Dynamic Camera tracking */}
       <CameraController />
@@ -168,7 +93,8 @@ export const Scene = ({ children }) => {
       
       {/* Dynamic Moonlight that follows the player for endless real-time shadows */}
       <directionalLight 
-        position={lightPosition} 
+        ref={lightRef}
+        position={[-10, 18, 8]} 
         intensity={1.0} 
         color="#8ba3cf" 
         castShadow 
@@ -182,17 +108,11 @@ export const Scene = ({ children }) => {
         shadow-bias={-0.0008}
       />
 
-      {/* Ambient environment styling in 3D mode */}
-      {dimension === '3D' && (
-        <>
-          {/* Sweeping Neon Cyberpunk Searchlights */}
-          <Searchlight position={searchlightPinkPos} color="#ff007f" rotationSpeed={0.4} angleOffset={0} />
-          <Searchlight position={searchlightCyanPos} color="#00f0ff" rotationSpeed={0.5} angleOffset={Math.PI / 2} />
-          
-          {/* Floating Neon AgX Embers/Atmospheric Dust particles */}
-          <GlowingDust count={120} />
-        </>
-      )}
+      {/* Floating Neon AgX Embers/Atmospheric Dust particles */}
+      <GlowingDust count={120} />
+      
+      {/* Cyberpunk Parallax looping background */}
+      <Parallax3DBackground />
       
       <Environment preset="city" />
 
@@ -204,6 +124,11 @@ export const Scene = ({ children }) => {
           <EndlessWorld />
         </Physics>
       </Suspense>
+
+      {/* High-fidelity WebGL Instanced Particle System */}
+      <ParticleSystem />
     </>
   );
 };
+
+

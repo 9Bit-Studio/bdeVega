@@ -188,10 +188,10 @@ const Trampoline = ({ position, onLaunch }) => {
 };
 
 export const EndlessWorld = () => {
-  const playerPosition = useGameStore((state) => state.playerPosition);
   const addPoints = useGameStore((state) => state.addPoints);
   const loseLife = useGameStore((state) => state.loseLife);
   const gameState = useGameStore((state) => state.gameState);
+  const triggerParticles = useGameStore((state) => state.triggerParticles);
 
   const [worldData, setWorldData] = useState({
     platforms: [
@@ -238,7 +238,7 @@ export const EndlessWorld = () => {
   useFrame(() => {
     if (gameState !== 'PLAYING') return;
 
-    const px = playerPosition.x;
+    const px = useGameStore.getState().playerPosition.x;
     
     // Prune expired FX rings
     setVisualEffects((prev) => prev.filter((eff) => Date.now() - eff.time < 1000));
@@ -370,6 +370,7 @@ export const EndlessWorld = () => {
     }));
     addPoints(10);
     spawnEffect([coinPos[0], coinPos[1], coinPos[2] || 0], "#FFD700");
+    triggerParticles({ x: coinPos[0], y: coinPos[1], z: coinPos[2] || 0 }, 'coin');
   };
 
   return (
@@ -413,7 +414,10 @@ export const EndlessWorld = () => {
         <Spike 
           key={spike.id} 
           position={spike.pos} 
-          onHit={() => loseLife()} 
+          onHit={() => {
+            triggerParticles({ x: spike.pos[0], y: spike.pos[1], z: spike.pos[2] }, 'spike');
+            loseLife();
+          }} 
         />
       ))}
 
@@ -430,7 +434,10 @@ export const EndlessWorld = () => {
         <Trampoline 
           key={tramp.id} 
           position={tramp.pos} 
-          onLaunch={() => spawnEffect(tramp.pos, "#ec4899")}
+          onLaunch={() => {
+            triggerParticles({ x: tramp.pos[0], y: tramp.pos[1], z: tramp.pos[2] }, 'trampoline');
+            spawnEffect(tramp.pos, "#ec4899");
+          }}
         />
       ))}
 

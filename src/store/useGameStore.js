@@ -7,6 +7,7 @@ export const useGameStore = create((set) => ({
   gameState: 'START', // START, PLAYING, GAMEOVER
   playerPosition: { x: 0, y: 0, z: 0 },
   respawnCount: 0,
+  particleTrigger: null,
   
   setDimension: (dim) => set({ dimension: dim }),
   addPoints: (val) => set((state) => ({ points: state.points + val })),
@@ -16,5 +17,7 @@ export const useGameStore = create((set) => ({
   })),
   setGameState: (status) => set({ gameState: status }),
   setPlayerPosition: (pos) => set({ playerPosition: pos }),
-  reset: () => set({ points: 0, lives: 3, gameState: 'PLAYING', playerPosition: { x: 0, y: 0, z: 0 }, respawnCount: 0 }),
+  triggerParticles: (pos, type) => set({ particleTrigger: { pos, type, id: Math.random() } }),
+  reset: () => set({ points: 0, lives: 3, gameState: 'PLAYING', playerPosition: { x: 0, y: 0, z: 0 }, respawnCount: 0, particleTrigger: null }),
 }));
+

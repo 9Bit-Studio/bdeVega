@@ -127,21 +127,48 @@ export const Player3D = ({ modelUrl = '/character.glb' }) => {
   const loseLife = useGameStore((state) => state.loseLife);
   const respawnCount = useGameStore((state) => state.respawnCount);
   const gameState = useGameStore((state) => state.gameState);
+  const triggerParticles = useGameStore((state) => state.triggerParticles);
+
+  // Particles & movement refs
+  const runParticleTimer = useRef(0);
+
+  // Cyber-Juice Squash/Stretch & Leaning Refs
+  const wasOnGround = useRef(true);
+  const scaleXRef = useRef(1.0);
+  const scaleYRef = useRef(1.0);
+  const scaleZRef = useRef(1.0);
+
+  // Cyber-Juice Aura Light Refs
+  const auraRef = useRef();
+  const auraColorRef = useRef(new THREE.Color("#00f0ff"));
+  const auraIntensityRef = useRef(5.0);
+  const lastProcessedTriggerId = useRef(null);
 
   // Handle Respawning
-  const lastRespawn = useRef(0);
   useEffect(() => {
-    if (rb.current && respawnCount > lastRespawn.current) {
+    if (rb.current) {
       rb.current.setTranslation({ x: 0, y: 3, z: 0 }, true);
       rb.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
-      lastRespawn.current = respawnCount;
+      scaleXRef.current = 1.0;
+      scaleYRef.current = 1.0;
+      scaleZRef.current = 1.0;
     }
   }, [respawnCount]);
 
   useFrame((state, delta) => {
-    if (!rb.current || gameState !== 'PLAYING') return;
+    if (!rb.current) return;
 
-    const { forward, backward, left, right, jump } = getKeys();
+    if (gameState !== 'PLAYING') {
+      rb.current.setTranslation({ x: 0, y: 3, z: 0 }, true);
+      rb.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      if (group.current) {
+        group.current.rotation.set(0, 0, 0);
+        group.current.scale.set(1, 1, 1);
+      }
+      return;
+    }
+
+    const { left, right, jump } = getKeys();
     const velocity = rb.current.linvel();
     const pos = rb.current.translation();
     const speed = 7.5; // Premium swift speed for the endless runner
@@ -155,10 +182,10 @@ export const Player3D = ({ modelUrl = '/character.glb' }) => {
       return;
     }
 
-    // Re-aligned 3D Control Schema:
-    // Forward/Backward (W/S) controls X-axis movement (running along track)
-    // Left/Right (A/D) controls Z-axis lane switching (clamped safely)
-    const targetVelX = (forward ? speed : 0) - (backward ? speed : 0);
+    // Auto-Runner Control Schema:
+    // Forward (X-axis) velocity is automatic and constant
+    // Left/Right (A/D or Arrow keys) controls Z-axis lane switching (clamped safely)
+    const targetVelX = speed;
     const targetVelZ = (right ? speed : 0) - (left ? speed : 0);
 
     // Smooth velocity lerping for acceleration inertia
@@ -195,9 +222,86 @@ export const Player3D = ({ modelUrl = '/character.glb' }) => {
       setCurrentAnimation('Idle');
     }
 
-    // High fidelity jump impulse
-    if (jump && Math.abs(velocity.y) < 0.1) {
+    // High fidelity running particle trigger & Land Squash detection
+    const isOnGround = Math.abs(velocity.y) < 0.15;
+    
+    if (isOnGround) {
+      // Catch Landing Frame
+      if (!wasOnGround.current) {
+        scaleYRef.current = 0.62; // Squash vertically
+        scaleXRef.current = 1.25; // Bulge outwards
+        scaleZRef.current = 1.25;
+        triggerParticles({ x: pos.x, y: pos.y, z: pos.z }, 'run');
+      }
+
+      if (horizontalSpeed > 1.0) {
+        runParticleTimer.current += delta;
+        if (runParticleTimer.current >= 0.08) {
+          runParticleTimer.current = 0;
+          triggerParticles({ x: pos.x, y: pos.y, z: pos.z }, 'run');
+        }
+      } else {
+        runParticleTimer.current = 0;
+      }
+    } else {
+      runParticleTimer.current = 0;
+    }
+    wasOnGround.current = isOnGround;
+
+    // High fidelity jump impulse & jump particles trigger
+    if (jump && isOnGround) {
       rb.current.applyImpulse({ x: 0, y: 7.2, z: 0 }, true);
+      triggerParticles({ x: pos.x, y: pos.y, z: pos.z }, 'jump');
+
+      // STRETCH on jump launch!
+      scaleYRef.current = 1.38;
+      scaleXRef.current = 0.8;
+      scaleZRef.current = 0.8;
+    }
+
+    // Decay Squash & Stretch scales back to 1.0
+    scaleXRef.current = THREE.MathUtils.lerp(scaleXRef.current, 1.0, 0.12);
+    scaleYRef.current = THREE.MathUtils.lerp(scaleYRef.current, 1.0, 0.12);
+    scaleZRef.current = THREE.MathUtils.lerp(scaleZRef.current, 1.0, 0.12);
+
+    if (group.current) {
+      // Apply Squash and Stretch scale
+      group.current.scale.set(scaleXRef.current, scaleYRef.current, scaleZRef.current);
+      
+      // Lane Leaning roll (tilt sideways on rotation Z) based on steering Z velocity
+      const targetRoll = -velocity.z * 0.045;
+      group.current.rotation.z = THREE.MathUtils.lerp(group.current.rotation.z, targetRoll, 0.15);
+    }
+
+    // Interactive Real-Time Aura Light Flashing
+    const { particleTrigger: auraTrigger } = useGameStore.getState();
+    if (auraTrigger && auraTrigger.id !== lastProcessedTriggerId.current) {
+      lastProcessedTriggerId.current = auraTrigger.id;
+      if (auraTrigger.type === 'coin') {
+        auraColorRef.current.set("#FFD700"); // Golden
+        auraIntensityRef.current = 22.0;
+      } else if (auraTrigger.type === 'trampoline') {
+        auraColorRef.current.set("#ff007f"); // Hot Pink
+        auraIntensityRef.current = 25.0;
+      } else if (auraTrigger.type === 'spike') {
+        auraColorRef.current.set("#ff0033"); // Threat Red
+        auraIntensityRef.current = 35.0;
+      } else if (auraTrigger.type === 'jump') {
+        auraColorRef.current.set("#ffffff"); // Soft White
+        auraIntensityRef.current = 12.0;
+      }
+    }
+
+    if (auraRef.current) {
+      // Lerp aura color back to default cyber-cyan
+      const defaultCyan = new THREE.Color("#00f0ff");
+      auraColorRef.current.lerp(defaultCyan, 0.08);
+
+      // Lerp aura intensity back to default 5.0
+      auraIntensityRef.current = THREE.MathUtils.lerp(auraIntensityRef.current, 5.0, 0.08);
+
+      auraRef.current.color.copy(auraColorRef.current);
+      auraRef.current.intensity = auraIntensityRef.current;
     }
   });
 
@@ -214,6 +318,7 @@ export const Player3D = ({ modelUrl = '/character.glb' }) => {
       <CapsuleCollider args={[0.5, 0.35]} position={[0, 0.55, 0]} />
       {/* Dynamic Glowing Player Aura */}
       <pointLight 
+        ref={auraRef}
         position={[0, 1.2, 0]} 
         intensity={5.0} 
         color="#00f0ff" 

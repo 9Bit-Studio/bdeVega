@@ -15,6 +15,10 @@ export const Player2D = ({ spriteUrl = '/sprite.png' }) => {
   const loseLife = useGameStore((state) => state.loseLife);
   const respawnCount = useGameStore((state) => state.respawnCount);
   const gameState = useGameStore((state) => state.gameState);
+  const triggerParticles = useGameStore((state) => state.triggerParticles);
+
+  // Particles & movement refs
+  const runParticleTimer = useRef(0);
 
   // Load the generated cute player texture
   const texture = useTexture(spriteUrl);
@@ -48,24 +52,39 @@ export const Player2D = ({ spriteUrl = '/sprite.png' }) => {
       return;
     }
 
-    // Smooth velocity lerping along X-axis
-    const targetVelX = (right ? speed : 0) - (left ? speed : 0);
+    // Auto-Runner 2D Movement:
+    // Automatically runs to the right along the X-axis.
+    // Left/Right keys allow the player to accelerate or brake/dodge obstacles horizontally on screen.
+    const targetVelX = speed + (right ? 3.0 : 0) - (left ? 3.0 : 0);
     const lerpFactor = 0.15;
     const nextVelX = THREE.MathUtils.lerp(velocity.x, targetVelX, lerpFactor);
 
-    // Orientation flipping
+    // Orientation flipping (cute retro look)
     if (left) {
       if (meshGroup.current) meshGroup.current.rotation.y = Math.PI; // Flip sprite to face left
-    } else if (right) {
-      if (meshGroup.current) meshGroup.current.rotation.y = 0; // Face right
+    } else {
+      if (meshGroup.current) meshGroup.current.rotation.y = 0; // Face right (default running direction)
     }
 
-    // Jumping Mechanics
-    if (jump && Math.abs(velocity.y) < 0.1) {
+    // Jumping Mechanics & Jump Particle Spawner
+    const isOnGround = Math.abs(velocity.y) < 0.15;
+    if (jump && isOnGround) {
       rb.current.applyImpulse({ x: 0, y: 7.5, z: 0 }, true);
+      triggerParticles({ x: pos.x, y: pos.y, z: 0 }, 'jump');
     }
 
     rb.current.setLinvel({ x: nextVelX, y: velocity.y, z: 0 }, true);
+
+    // High fidelity running dust trail particle trigger
+    if (isOnGround && nextVelX > 1.0) {
+      runParticleTimer.current += delta;
+      if (runParticleTimer.current >= 0.08) {
+        runParticleTimer.current = 0;
+        triggerParticles({ x: pos.x, y: pos.y - 0.4, z: 0 }, 'run');
+      }
+    } else {
+      runParticleTimer.current = 0;
+    }
 
     // --- GAME JUICE (Programmatic Animations) ---
     if (meshGroup.current) {
