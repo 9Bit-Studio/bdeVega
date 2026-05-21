@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export const useGameStore = create((set) => ({
-  dimension: '3D', // '2D' or '3D'
+  dimension: '2D', // '2D' or '3D'
   points: 0,
   lives: 3,
   gameState: 'START', // START, PLAYING, GAMEOVER
