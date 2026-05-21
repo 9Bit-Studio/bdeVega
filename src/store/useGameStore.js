@@ -5,10 +5,16 @@ export const useGameStore = create((set) => ({
   points: 0,
   lives: 3,
   gameState: 'START', // START, PLAYING, GAMEOVER
+  playerPosition: { x: 0, y: 0, z: 0 },
+  respawnCount: 0,
   
   setDimension: (dim) => set({ dimension: dim }),
   addPoints: (val) => set((state) => ({ points: state.points + val })),
-  loseLife: () => set((state) => ({ lives: Math.max(0, state.lives - 1) })),
+  loseLife: () => set((state) => ({ 
+    lives: Math.max(0, state.lives - 1), 
+    respawnCount: state.respawnCount + 1 
+  })),
   setGameState: (status) => set({ gameState: status }),
-  reset: () => set({ points: 0, lives: 3, gameState: 'PLAYING' }),
+  setPlayerPosition: (pos) => set({ playerPosition: pos }),
+  reset: () => set({ points: 0, lives: 3, gameState: 'PLAYING', playerPosition: { x: 0, y: 0, z: 0 }, respawnCount: 0 }),
 }));

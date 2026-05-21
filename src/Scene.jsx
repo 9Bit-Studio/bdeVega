@@ -2,6 +2,8 @@ import { PerspectiveCamera, OrthographicCamera, Environment, ContactShadows } fr
 import { Physics } from '@react-three/rapier';
 import { useGameStore } from './store/useGameStore';
 import { Suspense } from 'react';
+import { EndlessWorld } from './components/EndlessWorld';
+import { CameraController } from './components/CameraController';
 
 export const Scene = ({ children }) => {
   const dimension = useGameStore((state) => state.dimension);
@@ -14,28 +16,25 @@ export const Scene = ({ children }) => {
         <OrthographicCamera makeDefault position={[0, 0, 10]} zoom={50} />
       )}
 
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} intensity={1} />
+      {/* Dynamic Camera tracking */}
+      <CameraController />
+
+      <ambientLight intensity={0.6} />
+      <pointLight position={[15, 15, 15]} intensity={1.5} castShadow />
+      <directionalLight position={[-10, 20, 10]} intensity={1.0} castShadow />
+      
       <Environment preset="city" />
 
       <Suspense fallback={null}>
-        <Physics debug>
+        <Physics gravity={[0, -20, 0]}>
           {children}
           
-          {/* Default Floor for testing */}
-          <RigidBody type="fixed" position={[0, -1, 0]}>
-            <mesh receiveShadow>
-              <boxGeometry args={[20, 0.5, 20]} />
-              <meshStandardMaterial color="#333" />
-            </mesh>
-          </RigidBody>
+          {/* Procedural Endless levels spawner */}
+          <EndlessWorld />
         </Physics>
       </Suspense>
 
-      <ContactShadows opacity={0.5} scale={10} blur={1} far={10} resolution={256} color="#000000" />
+      <ContactShadows opacity={0.6} scale={40} blur={1.5} far={15} resolution={512} color="#000000" />
     </>
   );
 };
-
-// Need to import RigidBody from rapier
-import { RigidBody } from '@react-three/rapier';
