@@ -144,8 +144,7 @@ export const Player3D = ({ modelUrl = '/character.glb' }) => {
     const { forward, backward, left, right, jump } = getKeys();
     const velocity = rb.current.linvel();
     const pos = rb.current.translation();
-    const movement = new THREE.Vector3(0, 0, 0);
-    const speed = 6;
+    const speed = 7.5; // Premium swift speed for the endless runner
 
     // Track position in store for camera & spawner
     setPlayerPosition({ x: pos.x, y: pos.y, z: pos.z });
@@ -156,32 +155,49 @@ export const Player3D = ({ modelUrl = '/character.glb' }) => {
       return;
     }
 
-    if (forward) movement.z -= speed;
-    if (backward) movement.z += speed;
-    if (left) movement.x -= speed;
-    if (right) movement.x += speed;
+    // Re-aligned 3D Control Schema:
+    // Left/Right (A/D) controls X-axis movement (running along track)
+    // Forward/Backward (W/S) controls Z-axis lane switching (clamped safely)
+    const targetVelX = (right ? speed : 0) - (left ? speed : 0);
+    const targetVelZ = (backward ? speed : 0) - (forward ? speed : 0);
 
-    // Apply linear velocity
-    rb.current.setLinvel({ x: movement.x, y: velocity.y, z: movement.z }, true);
+    // Smooth velocity lerping for acceleration inertia
+    const lerpFactor = 0.15;
+    const nextVelX = THREE.MathUtils.lerp(velocity.x, targetVelX, lerpFactor);
+    const nextVelZ = THREE.MathUtils.lerp(velocity.z, targetVelZ, lerpFactor);
 
-    // Dynamic rotation & animation toggling
-    if (movement.length() > 0) {
-      const angle = Math.atan2(movement.x, movement.z);
+    // Clamp player Z inside [-2.2, 2.2] to keep them on the track
+    let nextZ = pos.z + nextVelZ * delta;
+    let finalVelZ = nextVelZ;
+
+    if (nextZ < -2.2) {
+      rb.current.setTranslation({ x: pos.x, y: pos.y, z: -2.2 }, true);
+      finalVelZ = 0;
+    } else if (nextZ > 2.2) {
+      rb.current.setTranslation({ x: pos.x, y: pos.y, z: 2.2 }, true);
+      finalVelZ = 0;
+    }
+
+    rb.current.setLinvel({ x: nextVelX, y: velocity.y, z: finalVelZ }, true);
+
+    // Dynamic mesh rotation & animations based on horizontal movement
+    const horizontalSpeed = Math.sqrt(nextVelX * nextVelX + finalVelZ * finalVelZ);
+    if (horizontalSpeed > 0.2) {
+      const angle = Math.atan2(nextVelX, finalVelZ);
       if (group.current) {
-        group.current.rotation.y = THREE.MathUtils.lerp(
-          group.current.rotation.y,
-          angle,
-          0.15
-        );
+        let diff = angle - group.current.rotation.y;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        group.current.rotation.y += diff * 0.2;
       }
       setCurrentAnimation('Run');
     } else {
       setCurrentAnimation('Idle');
     }
 
-    // Jump
+    // High fidelity jump impulse
     if (jump && Math.abs(velocity.y) < 0.1) {
-      rb.current.applyImpulse({ x: 0, y: 5.5, z: 0 }, true);
+      rb.current.applyImpulse({ x: 0, y: 7.2, z: 0 }, true);
     }
   });
 
@@ -196,6 +212,19 @@ export const Player3D = ({ modelUrl = '/character.glb' }) => {
         />
       </GLTFErrorBoundary>
       <CapsuleCollider args={[0.5, 0.35]} position={[0, 0.55, 0]} />
+      {/* Dynamic Glowing Player Aura for Cinematic Shadows */}
+      <pointLight 
+        position={[0, 1.2, 0]} 
+        intensity={6.0} 
+        color="#00f0ff" 
+        distance={15} 
+        decay={1.5} 
+        castShadow 
+        shadow-mapSize-width={512}
+        shadow-mapSize-height={512}
+        shadow-bias={-0.001}
+      />
     </RigidBody>
   );
 };
+

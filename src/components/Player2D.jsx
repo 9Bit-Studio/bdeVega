@@ -31,13 +31,13 @@ export const Player2D = ({ spriteUrl = '/sprite.png' }) => {
     }
   }, [respawnCount]);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (!rb.current || gameState !== 'PLAYING') return;
 
     const { left, right, jump } = getKeys();
     const velocity = rb.current.linvel();
     const pos = rb.current.translation();
-    const speed = 6;
+    const speed = 7.5; // Matches the 3D character speed
 
     // Track position in store for camera & spawner
     setPlayerPosition({ x: pos.x, y: pos.y, z: 0 });
@@ -48,23 +48,24 @@ export const Player2D = ({ spriteUrl = '/sprite.png' }) => {
       return;
     }
 
-    let moveX = 0;
+    // Smooth velocity lerping along X-axis
+    const targetVelX = (right ? speed : 0) - (left ? speed : 0);
+    const lerpFactor = 0.15;
+    const nextVelX = THREE.MathUtils.lerp(velocity.x, targetVelX, lerpFactor);
 
-    // Left/Right Movement
+    // Orientation flipping
     if (left) {
-      moveX = -speed;
       if (meshGroup.current) meshGroup.current.rotation.y = Math.PI; // Flip sprite to face left
     } else if (right) {
-      moveX = speed;
       if (meshGroup.current) meshGroup.current.rotation.y = 0; // Face right
     }
 
-    // Jumping Mechanics (ensure vertical velocity is very close to zero to prevent double jumps)
+    // Jumping Mechanics
     if (jump && Math.abs(velocity.y) < 0.1) {
       rb.current.applyImpulse({ x: 0, y: 7.5, z: 0 }, true);
     }
 
-    rb.current.setLinvel({ x: moveX, y: velocity.y, z: 0 }, true);
+    rb.current.setLinvel({ x: nextVelX, y: velocity.y, z: 0 }, true);
 
     // --- GAME JUICE (Programmatic Animations) ---
     if (meshGroup.current) {
@@ -78,7 +79,7 @@ export const Player2D = ({ spriteUrl = '/sprite.png' }) => {
       if (Math.abs(velocity.y) > 0.2) {
         scaleY = 1.3 + velocity.y * 0.04;
         scaleX = 1.3 - velocity.y * 0.04;
-      } else if (Math.abs(moveX) > 0.1) {
+      } else if (Math.abs(nextVelX) > 0.1) {
         // Walking bobbing effect
         scaleY = 1.3 + Math.sin(time * 18) * 0.1;
         scaleX = 1.3 - Math.sin(time * 18) * 0.05;
@@ -103,6 +104,15 @@ export const Player2D = ({ spriteUrl = '/sprite.png' }) => {
         </mesh>
       </group>
       <CuboidCollider args={[0.45, 0.5, 0.45]} />
+      {/* 2D Player Emissive Aura */}
+      <pointLight 
+        position={[0, 0, 0.8]} 
+        intensity={5.0} 
+        color="#00f0ff" 
+        distance={10} 
+        decay={1.5} 
+        castShadow 
+      />
     </RigidBody>
   );
 };
