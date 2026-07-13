@@ -14,17 +14,26 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --sourcemap --clean",
+    "build": "tsup src/index.ts --format esm --dts --sourcemap --clean --external react --external react-dom --external three --external @react-three/fiber --external @react-three/drei --external @react-three/rapier --external zustand",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
+    "@react-three/rapier": "^2.2.0",
     "@vega/spec": "workspace:*",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "three": "^0.184.0",
     "zustand": "5.0.14"
   },
   "devDependencies": {
     "@vega/genres": "workspace:*",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.184.1",
     "tsup": "8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"

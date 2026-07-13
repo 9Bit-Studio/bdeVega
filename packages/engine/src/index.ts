@@ -1,4 +1,5 @@
 export { createInputBindings, type EngineInputBinding } from "./core/input.js";
+export { installGameTestApi, type GameTestApi } from "./core/test-api.js";
 export {
   createEngineRuntimeApi,
   type EngineEffects,
@@ -14,3 +15,4 @@ export {
   type GameStoreState,
   type Vector3State,
 } from "./store/game-store.js";
+export { GameRoot, type GameRootProps } from "./react/game-root.js";

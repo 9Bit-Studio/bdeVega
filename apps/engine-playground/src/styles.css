@@ -1,0 +1,35 @@
+:root {
+  color: #f4f7f5;
+  background: #070909;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, select, textarea { font: inherit; }
+
+.playground-shell { min-height: 100vh; padding: 20px; }
+header { display: flex; justify-content: space-between; align-items: end; gap: 20px; max-width: 1800px; margin: 0 auto 18px; }
+header p { margin: 0 0 4px; color: #3ddc97; font: 700 11px/1 ui-monospace, monospace; letter-spacing: .18em; }
+h1 { margin: 0; font-size: 28px; letter-spacing: -.04em; }
+header label { display: grid; gap: 6px; color: #929b98; font-size: 12px; }
+select { min-width: 220px; border: 1px solid #2c3331; border-radius: 8px; padding: 9px 12px; color: white; background: #111514; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 36vw); gap: 16px; max-width: 1800px; height: calc(100vh - 102px); margin: 0 auto; }
+.preview, .editor-panel { min-height: 0; overflow: hidden; border: 1px solid #252b29; border-radius: 14px; background: #0c0f0e; }
+.editor-panel { display: grid; grid-template-rows: auto 1fr auto; }
+.editor-heading { display: flex; justify-content: space-between; align-items: center; padding: 13px 15px; border-bottom: 1px solid #252b29; }
+.editor-heading h2 { margin: 0; font-size: 13px; }
+.editor-heading span { border-radius: 99px; padding: 4px 8px; font: 700 10px/1 ui-monospace, monospace; text-transform: uppercase; }
+.valid { color: #3ddc97; background: #10261c; }
+.invalid { color: #fb7185; background: #30141b; }
+textarea { width: 100%; min-height: 0; resize: none; border: 0; outline: 0; padding: 16px; color: #dbe5e1; background: #090b0b; font: 12px/1.55 ui-monospace, SFMono-Regular, monospace; tab-size: 2; }
+.errors { max-height: 128px; overflow: auto; border-top: 1px solid #252b29; color: #fb7185; background: #120d0f; font: 11px/1.4 ui-monospace, monospace; }
+.errors:empty { display: none; }
+.errors p { margin: 0; padding: 5px 12px; }
+
+@media (max-width: 900px) {
+  .workspace { grid-template-columns: 1fr; height: auto; }
+  .preview { height: 62vh; }
+  .editor-panel { height: 70vh; }
+}
