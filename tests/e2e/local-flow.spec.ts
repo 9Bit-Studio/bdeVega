@@ -18,6 +18,7 @@ test("signup through replayed generation, refine, and dry-run publish", async ({
   await expect(iframe).toBeVisible();
   await expect(page.locator(".local-status")).toContainText(/Playtest passed|verification notes/);
 
+  await expect.poll(() => page.frames().some((frame) => frame.url().includes("/play/"))).toBe(true);
   const gameFrame = page.frames().find((frame) => frame.url().includes("/play/"));
   expect(gameFrame).toBeTruthy();
   await gameFrame!.waitForFunction(() => Boolean(window.__gameTestApi));
