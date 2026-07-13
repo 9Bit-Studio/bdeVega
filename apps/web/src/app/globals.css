@@ -7,25 +7,31 @@
   --color-card-foreground: var(--card-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-ring: var(--ring);
   --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+  --font-display: "Bricolage Grotesque Variable", "Geist", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
-  --background: #090b0c;
-  --foreground: #f3f5f4;
-  --card: #0f1213;
-  --card-foreground: #f3f5f4;
-  --primary: #3ddc97;
-  --primary-foreground: #062116;
-  --muted: #171b1c;
-  --muted-foreground: #929b98;
-  --border: #242a28;
-  --ring: #3ddc97;
+  /* Playful arcade: warm near-black, coral + amber */
+  --background: #121014;
+  --foreground: #f7f4ef;
+  --card: #1a1720;
+  --card-foreground: #f7f4ef;
+  --primary: #ff6b4a;
+  --primary-foreground: #2b0d04;
+  --accent: #ffb347;
+  --accent-foreground: #2b1a02;
+  --muted: #211d28;
+  --muted-foreground: #a49aab;
+  --border: #2b2632;
+  --ring: #ff6b4a;
 }
 
 * {
@@ -41,7 +47,7 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
 }
 
@@ -50,6 +56,41 @@ body {
   color: var(--primary-foreground);
 }
 
+.font-display {
+  font-family: var(--font-display);
+}
+
+.gradient-warm {
+  background-image: linear-gradient(120deg, #ff6b4a 0%, #ffb347 100%);
+}
+
+.gradient-warm-text {
+  background-image: linear-gradient(120deg, #ff6b4a 20%, #ffb347 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glow-coral {
+  box-shadow: 0 0 0 1px rgba(255, 107, 74, 0.55), 0 0 34px rgba(255, 107, 74, 0.28);
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(100deg, var(--muted) 40%, #2a2533 50%, var(--muted) 60%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+/* --- legacy local dev harness (kept for offline e2e coverage) --- */
 .local-shell { min-height: 100vh; padding: 20px; }
 .local-header { display: flex; justify-content: space-between; align-items: center; max-width: 1500px; margin: 0 auto 18px; }
 .local-brand { display: flex; align-items: center; gap: 8px; color: var(--foreground); text-decoration: none; font-weight: 700; }
@@ -71,11 +112,11 @@ body {
 .question-context { margin: 0; color: var(--muted-foreground); font: 12px/1.5 var(--font-mono); }
 .key-strip { margin-top: auto; color: var(--muted-foreground); font: 10px/1.5 var(--font-mono); }
 .player-column { min-width: 0; }
-.player-frame { aspect-ratio: 16/9; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: #050707; }
+.player-frame { aspect-ratio: 16/9; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: #0b090d; }
 .player-frame iframe { width: 100%; height: 100%; border: 0; }
 .empty-player { display: grid; place-content: center; justify-items: center; height: 100%; color: var(--muted-foreground); }
 .refine-card { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; margin-top: 14px; }
 .refine-card code { grid-column: 1/-1; overflow: auto; color: var(--primary); font-size: 11px; }
 .play-page { width: 100vw; height: 100vh; overflow: hidden; }
-.play-loading { display: grid; width: 100vw; height: 100vh; place-items: center; background: #090b0c; color: #929b98; font-family: ui-sans-serif, system-ui; }
+.play-loading { display: grid; width: 100vw; height: 100vh; place-items: center; background: #121014; color: #a49aab; font-family: ui-sans-serif, system-ui; }
 @media (max-width: 900px) { .builder-grid { grid-template-columns: 1fr; } .refine-card { grid-template-columns: 1fr; } }

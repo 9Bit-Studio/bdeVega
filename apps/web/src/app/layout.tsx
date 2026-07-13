@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 
+import "@fontsource-variable/bricolage-grotesque";
 import "./globals.css";
 import { ConvexClientProvider } from "@/components/convex-client-provider";
 

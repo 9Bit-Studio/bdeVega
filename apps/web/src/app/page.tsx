@@ -19,7 +19,7 @@ export default function HomePage() {
           </span>
           Vega Forge
         </a>
-        <Button asChild variant="ghost"><Link href="/local">Local sign in</Link></Button>
+        <Button asChild variant="ghost"><Link href="/home">Sign in</Link></Button>
       </nav>
 
       <section className="mx-auto grid min-h-[70vh] w-full max-w-6xl items-center gap-16 px-6 py-20 lg:grid-cols-[1.1fr_0.9fr]">
@@ -35,16 +35,16 @@ export default function HomePage() {
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <Link href="/local">Start building <ArrowRight className="size-4" /></Link>
+              <Link href="/create">Start building <ArrowRight className="size-4" /></Link>
             </Button>
             <Button size="lg" variant="outline">Explore templates</Button>
           </div>
         </div>
 
         <div className="relative aspect-[4/5] rounded-[2rem] border border-border bg-card p-4 shadow-2xl shadow-black/40">
-          <div className="grid h-full place-items-center overflow-hidden rounded-[1.4rem] border border-white/5 bg-[radial-gradient(circle_at_50%_35%,#173c39_0%,#0b1516_38%,#080a0b_72%)]">
+          <div className="grid h-full place-items-center overflow-hidden rounded-[1.4rem] border border-white/5 bg-[radial-gradient(circle_at_50%_35%,#3c2017_0%,#1a1014_38%,#0b090d_72%)]">
             <div className="text-center">
-              <div className="mx-auto mb-5 grid size-20 place-items-center rounded-3xl border border-primary/30 bg-primary/10 text-primary shadow-[0_0_50px_rgba(61,220,151,0.2)]">
+              <div className="mx-auto mb-5 grid size-20 place-items-center rounded-3xl border border-primary/30 bg-primary/10 text-primary shadow-[0_0_50px_rgba(255,107,74,0.2)]">
                 <Gamepad2 className="size-9" />
               </div>
               <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Engine preview</p>

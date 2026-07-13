@@ -42,6 +42,7 @@ async function verify(gameId: string, expectations: GameExpectations) {
 async function generateSpec(ctx: ActionCtx, input: {
   userId: Id<"users">;
   provider: "openai" | "anthropic" | "gemini";
+  tier: "fast" | "strong";
   genre: GameGenre;
   prompt: string;
   answers: Record<string, string>;
@@ -64,7 +65,7 @@ async function generateSpec(ctx: ActionCtx, input: {
   const response = await createLLMClient({ fixtureStore: fixtures }).generate<GameSpec>({
     provider: input.provider,
     apiKey,
-    tier: "strong",
+    tier: input.tier,
     devModelTier: process.env.DEV_MODEL_TIER === "cheap",
     replay,
     record: process.env.LLM_RECORD === "true",
@@ -85,7 +86,7 @@ export const start = action({
     userId: v.id("users"),
     prompt: v.string(),
     genre: genreValidator,
-    provider: providerValidator,
+    provider: v.optional(providerValidator),
     answers: v.any(),
   },
   handler: async (ctx, input): Promise<{
@@ -93,7 +94,12 @@ export const start = action({
     versionId: Id<"gameVersions">;
     verifyResult: { pass: boolean; failures?: unknown[] };
   }> => {
-    const spec = await generateSpec(ctx, input);
+    // Provider and model tier come from the user's saved settings unless a caller
+    // (the local harness) pins the provider explicitly.
+    const settings: { defaultProvider: "openai" | "anthropic" | "gemini"; modelTiers: Record<"openai" | "anthropic" | "gemini", "fast" | "strong"> } =
+      await ctx.runQuery(internal.settings.getInternal, { userId: input.userId });
+    const provider = input.provider ?? settings.defaultProvider;
+    const spec = await generateSpec(ctx, { ...input, provider, tier: settings.modelTiers[provider] });
     spec.meta.title = input.prompt.trim().slice(0, 60) || spec.meta.title;
     const expectations = expectationsFor(spec);
     const created: { gameId: Id<"games">; versionId: Id<"gameVersions"> } = await ctx.runMutation(internal.games.createGenerated, {

@@ -15,14 +15,25 @@ export default defineSchema({
     last4: v.string(),
     validatedAt: v.number(),
   }).index("by_user_provider", ["userId", "provider"]),
+  userSettings: defineTable({
+    userId: v.id("users"),
+    defaultProvider: v.union(v.literal("openai"), v.literal("anthropic"), v.literal("gemini")),
+    modelTiers: v.object({
+      openai: v.union(v.literal("fast"), v.literal("strong")),
+      anthropic: v.union(v.literal("fast"), v.literal("strong")),
+      gemini: v.union(v.literal("fast"), v.literal("strong")),
+    }),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
   games: defineTable({
     userId: v.id("users"),
     title: v.string(),
     genre: v.string(),
     isPublic: v.boolean(),
+    plays: v.optional(v.number()),
     currentVersionId: v.optional(v.id("gameVersions")),
     createdAt: v.number(),
-  }).index("by_user", ["userId"]),
+  }).index("by_user", ["userId"]).index("by_public", ["isPublic"]),
   gameVersions: defineTable({
     gameId: v.id("games"),
     version: v.number(),

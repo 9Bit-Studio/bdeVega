@@ -1,6 +1,8 @@
 import { CuboidCollider, Physics, RigidBody } from "@react-three/rapier";
 import type { GameSpec, LevelEntity } from "@vega/spec";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import { Group } from "three";
 
 import { CameraController } from "./camera-controller.js";
 import { CoinField, type CoinItem } from "./coin-field.js";
@@ -17,6 +19,49 @@ interface EntityMarkerProps {
   index: number;
   position: [number, number, number];
   spec: GameSpec;
+}
+
+function GoalBeacon({ color }: { color: string }) {
+  const ring = useRef<Group>(null);
+  useFrame((state) => {
+    if (!ring.current) return;
+    ring.current.rotation.y = state.clock.elapsedTime * 1.2;
+    ring.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.15;
+  });
+  return (
+    <group ref={ring}>
+      <mesh castShadow>
+        <torusGeometry args={[0.55, 0.09, 12, 32]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.4} metalness={0.6} roughness={0.2} />
+      </mesh>
+      <pointLight color={color} intensity={4} distance={6} />
+    </group>
+  );
+}
+
+function HazardSpike({ color }: { color: string }) {
+  return (
+    <mesh castShadow position={[0, -0.1, 0]}>
+      <coneGeometry args={[0.4, 0.9, 6]} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} roughness={0.35} metalness={0.3} />
+    </mesh>
+  );
+}
+
+function EnemyOrb({ color }: { color: string }) {
+  const orb = useRef<Group>(null);
+  useFrame((state) => {
+    if (!orb.current) return;
+    orb.current.position.y = Math.sin(state.clock.elapsedTime * 3) * 0.12;
+  });
+  return (
+    <group ref={orb}>
+      <mesh castShadow>
+        <icosahedronGeometry args={[0.38, 1]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.8} roughness={0.25} metalness={0.5} />
+      </mesh>
+    </group>
+  );
 }
 
 function EntityMarker({ entity, index, position, spec }: EntityMarkerProps) {
@@ -36,14 +81,23 @@ function EntityMarker({ entity, index, position, spec }: EntityMarkerProps) {
   };
 
   const isSensor = ["coin", "goal", "hazard", "enemy", "trigger", "checkpoint"].includes(entity.type);
-  const color = entity.type === "goal" ? "#22c55e" : "#ef4444";
+  const goalColor = "#22c55e";
+  const dangerColor = spec.visuals.palette[1] ?? "#ef4444";
 
   return (
     <RigidBody key={`${entity.id}-${index}`} type="fixed" colliders={false} position={position}>
-      <mesh>
-        <boxGeometry args={[0.7, 0.7, 0.7]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.6} />
-      </mesh>
+      {entity.type === "goal" ? (
+        <GoalBeacon color={goalColor} />
+      ) : entity.type === "hazard" ? (
+        <HazardSpike color="#ef4444" />
+      ) : entity.type === "enemy" ? (
+        <EnemyOrb color={dangerColor} />
+      ) : (
+        <mesh castShadow>
+          <boxGeometry args={[0.7, 0.7, 0.7]} />
+          <meshStandardMaterial color={dangerColor} emissive={dangerColor} emissiveIntensity={0.6} />
+        </mesh>
+      )}
       <CuboidCollider args={[0.45, 0.45, 0.45]} sensor={isSensor} onIntersectionEnter={onEnter} />
     </RigidBody>
   );
@@ -63,6 +117,8 @@ function entityPositions(entity: LevelEntity): [number, number, number][] {
 export function GameScene({ spec }: GameSceneProps) {
   const isCollector = spec.player.controller === "topdown";
   const groundSize: [number, number, number] = isCollector ? [36, 0.5, 36] : [220, 0.5, 8];
+  const backgroundColor = spec.visuals.palette.at(-1) ?? "#090b0c";
+  const groundColor = spec.visuals.palette[2] ?? "#1f2937";
   const coins: CoinItem[] = spec.level.entities
     .filter((entity) => entity.type === "coin")
     .flatMap((entity) => entityPositions(entity).map((position, index) => ({
@@ -73,16 +129,33 @@ export function GameScene({ spec }: GameSceneProps) {
 
   return (
     <>
-      <color attach="background" args={[spec.visuals.palette.at(-1) ?? "#090b0c"]} />
-      <ambientLight intensity={0.5} />
-      <directionalLight intensity={1.8} position={[8, 16, 8]} />
+      <color attach="background" args={[backgroundColor]} />
+      <fog attach="fog" args={[backgroundColor, 25, isCollector ? 70 : 90]} />
+      <hemisphereLight args={["#bfd9ff", groundColor, 0.55]} />
+      <directionalLight
+        castShadow
+        intensity={1.8}
+        position={[8, 16, 8]}
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-30}
+        shadow-camera-right={30}
+        shadow-camera-top={30}
+        shadow-camera-bottom={-30}
+        shadow-bias={-0.0002}
+      />
       <CameraController spec={spec} />
       <TestApiBridge />
       <Physics gravity={spec.world.gravity}>
         <RigidBody type="fixed" colliders={false} position={isCollector ? [0, 0, 0] : [groundSize[0] / 2 - 10, -0.5, 0]}>
-          <mesh>
+          <mesh receiveShadow>
             <boxGeometry args={groundSize} />
-            <meshStandardMaterial color={spec.visuals.palette[2] ?? "#1f2937"} roughness={0.65} />
+            <meshStandardMaterial
+              color={groundColor}
+              emissive={spec.visuals.palette[0] ?? "#3ddc97"}
+              emissiveIntensity={0.04}
+              roughness={0.85}
+              metalness={0.1}
+            />
           </mesh>
           <CuboidCollider args={[groundSize[0] / 2, groundSize[1] / 2, groundSize[2] / 2]} />
         </RigidBody>

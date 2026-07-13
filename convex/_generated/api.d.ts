@@ -15,6 +15,7 @@ import type * as lib_crypto from "../lib/crypto.js";
 import type * as localUsers from "../localUsers.js";
 import type * as publish from "../publish.js";
 import type * as seed from "../seed.js";
+import type * as settings from "../settings.js";
 
 import type {
   ApiFromModules,
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   localUsers: typeof localUsers;
   publish: typeof publish;
   seed: typeof seed;
+  settings: typeof settings;
 }>;
 
 /**
