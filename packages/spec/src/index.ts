@@ -1,5 +1,11 @@
 export { gameSpecJsonSchema } from "./json-schema.js";
 export {
+  validateGameSpecWithRepair,
+  type GameSpecRepairContext,
+  type GameSpecRepairOptions,
+  type GameSpecRepairResult,
+} from "./repair.js";
+export {
   controlSchema,
   customScriptSchema,
   expectationAssertionSchema,
