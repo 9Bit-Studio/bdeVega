@@ -31,6 +31,8 @@ export const publishToVercel = action({
     } | null = await ctx.runQuery(internal.games.getCurrentInternal, { gameId: input.gameId });
     if (!current) throw new Error("Game not found");
     const projectName = `vega-${input.gameId.slice(-8)}`;
+    const appUrl = process.env.APP_URL ?? "http://127.0.0.1:3000";
+    const playUrl = `${appUrl.replace(/\/$/, "")}/play/${input.gameId}`;
     const payload: {
       name: string;
       files: { file: string; data: string }[];
@@ -38,7 +40,10 @@ export const publishToVercel = action({
     } = {
       name: projectName,
       files: [
-        { file: "index.html", data: "<!doctype html><title>Vega Game</title><main id=game></main>" },
+        {
+          file: "index.html",
+          data: `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vega Game</title><style>html,body,iframe{width:100%;height:100%;margin:0;border:0;background:#080b12}</style><iframe src="${playUrl}" title="Vega Game"></iframe>`,
+        },
         { file: "spec.json", data: JSON.stringify(current.version.spec) },
         { file: "expectations.json", data: JSON.stringify(current.version.expectations) },
       ],

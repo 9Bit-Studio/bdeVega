@@ -2,8 +2,9 @@ import { createApp } from "./app.js";
 import { closeBrowser } from "./verifier.js";
 
 const port = Number(process.env.PORT ?? 4001);
-const server = createApp().listen(port, "127.0.0.1", () => {
-  console.log(`[verify-runner] listening on http://localhost:${port}`);
+const host = process.env.HOST ?? "0.0.0.0";
+const server = createApp().listen(port, host, () => {
+  console.log(`[verify-runner] listening on http://${host}:${port}`);
 });
 
 async function shutdown() {

@@ -98,3 +98,21 @@ Its API is `POST http://localhost:4001/verify` with `{ "bundleUrl", "expectation
 - [ ] Check the Convex log for the exact Vercel API payload; no network deployment should occur.
 
 The anonymous local deployment state lives under `.convex` and remains outside Git.
+
+## Production deployment
+
+The production topology separates the browser app, Convex backend, and Chromium runner:
+
+1. Create a Vercel project for `apps/web`. The checked-in [`apps/web/vercel.json`](./apps/web/vercel.json) uses the workspace lockfile and builds `@vega/web` through Turbo.
+2. Create a production Convex project and deploy the functions:
+
+   ```bash
+   npx convex login
+   npx convex deploy
+   ```
+
+   Set `API_KEY_ENCRYPTION_SECRET`, `APP_URL`, `VERIFY_RUNNER_URL`, `LLM_REPLAY=false`, `DEV_MODEL_TIER=cheap`, `PUBLISH_DRY_RUN=true`, and any provider configuration with `npx convex env set --prod NAME VALUE`. Put the resulting production Convex URL in Vercel as `NEXT_PUBLIC_CONVEX_URL`.
+3. Build and deploy [`services/verify-runner/Dockerfile`](./services/verify-runner/Dockerfile) to a container host such as Cloud Run, Fly.io, Railway, or Render. Set its public HTTPS URL as Convex's `VERIFY_RUNNER_URL`. The runner binds to `0.0.0.0` in hosted environments and installs Chromium during the image build.
+4. Verify production generation while `PUBLISH_DRY_RUN=true`. When ready, set `VERCEL_TOKEN` in Convex and switch `PUBLISH_DRY_RUN=false`. Published Vercel deployments embed the public `/play/[gameId]` route, so the generated URL remains playable.
+
+Keep separate Convex preview/staging and production deployments. Do not copy `.env.local`, local encryption secrets, or local seeded data into production.
