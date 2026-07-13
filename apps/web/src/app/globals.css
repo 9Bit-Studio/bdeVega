@@ -49,3 +49,32 @@ body {
   background: var(--primary);
   color: var(--primary-foreground);
 }
+
+.local-shell { min-height: 100vh; padding: 20px; }
+.local-header { display: flex; justify-content: space-between; align-items: center; max-width: 1500px; margin: 0 auto 18px; }
+.local-brand { display: flex; align-items: center; gap: 8px; color: var(--foreground); text-decoration: none; font-weight: 700; }
+.local-status { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); font: 12px/1 var(--font-mono); }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.local-card { border: 1px solid var(--border); border-radius: 16px; background: var(--card); padding: 22px; }
+.auth-card { display: grid; gap: 18px; width: min(460px, 100%); margin: 10vh auto; }
+.auth-card h1, .builder-card h1 { margin: 0; font-size: 26px; letter-spacing: -.04em; }
+.eyebrow { margin: 0; color: var(--primary); font: 700 11px/1 var(--font-mono); letter-spacing: .16em; }
+.local-card label { display: grid; gap: 7px; color: var(--muted-foreground); font-size: 12px; }
+.local-card input, .local-card textarea, .local-card select { width: 100%; border: 1px solid var(--border); border-radius: 8px; outline: 0; padding: 10px 12px; color: var(--foreground); background: var(--background); font: inherit; }
+.local-card input:focus, .local-card textarea:focus, .local-card select:focus { border-color: var(--primary); }
+.builder-grid { display: grid; grid-template-columns: 430px minmax(0, 1fr); gap: 18px; max-width: 1500px; margin: 0 auto; }
+.builder-card { display: flex; flex-direction: column; gap: 18px; }
+.builder-card textarea { min-height: 130px; resize: vertical; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.question-stack { display: grid; gap: 12px; padding-top: 14px; border-top: 1px solid var(--border); }
+.key-strip { margin-top: auto; color: var(--muted-foreground); font: 10px/1.5 var(--font-mono); }
+.player-column { min-width: 0; }
+.player-frame { aspect-ratio: 16/9; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: #050707; }
+.player-frame iframe { width: 100%; height: 100%; border: 0; }
+.empty-player { display: grid; place-content: center; justify-items: center; height: 100%; color: var(--muted-foreground); }
+.refine-card { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; margin-top: 14px; }
+.refine-card code { grid-column: 1/-1; overflow: auto; color: var(--primary); font-size: 11px; }
+.play-page { width: 100vw; height: 100vh; overflow: hidden; }
+.play-loading { display: grid; width: 100vw; height: 100vh; place-items: center; background: #090b0c; color: #929b98; font-family: ui-sans-serif, system-ui; }
+@media (max-width: 900px) { .builder-grid { grid-template-columns: 1fr; } .refine-card { grid-template-columns: 1fr; } }

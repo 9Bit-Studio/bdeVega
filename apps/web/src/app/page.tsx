@@ -1,4 +1,5 @@
 import { ArrowRight, Gamepad2, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 
@@ -18,7 +19,7 @@ export default function HomePage() {
           </span>
           Vega Forge
         </a>
-        <Button variant="ghost">Sign in</Button>
+        <Button asChild variant="ghost"><Link href="/local">Local sign in</Link></Button>
       </nav>
 
       <section className="mx-auto grid min-h-[70vh] w-full max-w-6xl items-center gap-16 px-6 py-20 lg:grid-cols-[1.1fr_0.9fr]">
@@ -33,8 +34,8 @@ export default function HomePage() {
             Describe a world, choose how it should feel, and Vega Forge builds it on a tested game engine—not a pile of generated code.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
-            <Button size="lg">
-              Start building <ArrowRight className="size-4" />
+            <Button asChild size="lg">
+              <Link href="/local">Start building <ArrowRight className="size-4" /></Link>
             </Button>
             <Button size="lg" variant="outline">Explore templates</Button>
           </div>

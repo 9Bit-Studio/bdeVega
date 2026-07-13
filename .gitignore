@@ -13,6 +13,8 @@ dist-ssr
 *.local
 .next
 .turbo
+.convex
+.convex.env.local
 coverage
 pnpm-lock.yaml.tmp
 *.tsbuildinfo
