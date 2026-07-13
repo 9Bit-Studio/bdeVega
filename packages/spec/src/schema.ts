@@ -124,3 +124,25 @@ export type GameSpec = z.infer<typeof gameSpecSchema>;
 export type GameControl = z.infer<typeof controlSchema>;
 export type LevelEntity = z.infer<typeof levelEntitySchema>;
 export type CustomScript = z.infer<typeof customScriptSchema>;
+
+export const expectationAssertionSchema = z.object({
+  id: z.string().trim().min(1).max(80),
+  description: z.string().trim().min(1).max(240),
+  input: z
+    .object({
+      key: z.string().trim().min(1).max(40),
+      durationMs: z.number().int().min(16).max(5_000).default(120),
+    })
+    .optional(),
+  path: z.string().trim().min(1).max(160),
+  operator: z.enum(["changed", "increased", "decreased", "equals", "greater-than", "less-than", "truthy"]),
+  value: z.union([z.string(), z.number(), z.boolean()]).optional(),
+});
+
+export const gameExpectationsSchema = z.object({
+  fpsFloor: z.number().positive().max(240).default(30),
+  assertions: z.array(expectationAssertionSchema).max(32).default([]),
+});
+
+export type ExpectationAssertion = z.infer<typeof expectationAssertionSchema>;
+export type GameExpectations = z.infer<typeof gameExpectationsSchema>;

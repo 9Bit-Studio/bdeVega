@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { gameSpecJsonSchema, validateGameSpec } from "./index.js";
+import { gameExpectationsSchema, gameSpecJsonSchema, validateGameSpec } from "./index.js";
 
 const validSpec = {
   schemaVersion: "1",
@@ -86,5 +86,9 @@ describe("GameSpec", () => {
   it("exports a provider-ready JSON Schema", () => {
     expect(gameSpecJsonSchema.$schema).toBe("https://json-schema.org/draft/2020-12/schema");
     expect(gameSpecJsonSchema.type).toBe("object");
+  });
+
+  it("defaults verification settings for local playtests", () => {
+    expect(gameExpectationsSchema.parse({})).toEqual({ fpsFloor: 30, assertions: [] });
   });
 });

@@ -10,6 +10,8 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
+    "postinstall": "pnpm --filter verify-runner exec playwright install chromium",
+    "setup:browsers": "pnpm --filter verify-runner exec playwright install chromium",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck"
   },
