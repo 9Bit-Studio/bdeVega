@@ -51,3 +51,40 @@ export const genreQuestionBanks: Record<GameGenre, GenreQuestion[]> = {
     },
   ],
 };
+
+export function getQuestionsForPrompt(genre: GameGenre, prompt: string): GenreQuestion[] {
+  const normalized = prompt.toLowerCase();
+  const questions = genreQuestionBanks[genre].map((question) => ({
+    ...question,
+    options: [...question.options],
+  }));
+
+  if (/space|galaxy|astronaut|zero[- ]gravity/.test(normalized)) {
+    questions.push({
+      id: "gravity",
+      prompt: "How should movement feel in this space setting?",
+      options: ["normal gravity", "low gravity", "zero gravity"],
+      defaultOption: normalized.includes("zero") ? "zero gravity" : "low gravity",
+    });
+  }
+
+  if (/underwater|ocean|sea|submarine/.test(normalized)) {
+    questions.push({
+      id: "underwater-goal",
+      prompt: "What should the player focus on underwater?",
+      options: ["rescue creatures", "find treasure", "survive the current"],
+      defaultOption: "find treasure",
+    });
+  }
+
+  if (/co-op|coop|multiplayer|two players|friends/.test(normalized)) {
+    questions.push({
+      id: "player-count",
+      prompt: "How should the multiplayer moment work?",
+      options: ["one shared hero", "two cooperative heroes", "take turns"],
+      defaultOption: "two cooperative heroes",
+    });
+  }
+
+  return questions;
+}

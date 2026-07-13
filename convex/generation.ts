@@ -44,6 +44,7 @@ async function generateSpec(ctx: ActionCtx, input: {
   provider: "openai" | "anthropic" | "gemini";
   genre: GameGenre;
   prompt: string;
+  answers: Record<string, string>;
 }): Promise<GameSpec> {
   const fallback = structuredClone(genreSpecs[input.genre]);
   const replay = process.env.LLM_REPLAY !== "false";
@@ -69,7 +70,10 @@ async function generateSpec(ctx: ActionCtx, input: {
     record: process.env.LLM_RECORD === "true",
     fixtureId,
     system: "Create a complete GameSpec JSON. Return JSON only.",
-    messages: [{ role: "user", content: input.prompt }],
+    messages: [{
+      role: "user",
+      content: `${input.prompt}\n\nCreator decisions from the follow-up questions:\n${JSON.stringify(input.answers)}`,
+    }],
     jsonSchema: gameSpecJsonSchema as Record<string, unknown>,
   });
   const parsed = validateGameSpec(response.data);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { validateGameSpec } from "@vega/spec";
 
-import { genreQuestionBanks, genreSpecs, getGenreSpec } from "./index.js";
+import { genreQuestionBanks, genreSpecs, getGenreSpec, getQuestionsForPrompt } from "./index.js";
 
 describe("genre templates", () => {
   it("ships exactly the three v1 genres", () => {
@@ -32,5 +32,13 @@ describe("genre templates", () => {
         expect(question.options).toContain(question.defaultOption);
       }
     }
+  });
+
+  it("adds prompt-specific questions without mutating the shared bank", () => {
+    const questions = getQuestionsForPrompt("platformer", "A zero gravity space rescue");
+
+    expect(questions.map((question) => question.id)).toContain("gravity");
+    expect(questions.find((question) => question.id === "gravity")?.defaultOption).toBe("zero gravity");
+    expect(genreQuestionBanks.platformer.map((question) => question.id)).not.toContain("gravity");
   });
 });

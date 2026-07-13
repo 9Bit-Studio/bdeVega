@@ -6,7 +6,7 @@ import { topDownCollectorSpec } from "./top-down-collector.js";
 
 export { endlessRunnerSpec } from "./endless-runner.js";
 export { platformerSpec } from "./platformer.js";
-export { genreQuestionBanks, type GenreQuestion } from "./questions.js";
+export { genreQuestionBanks, getQuestionsForPrompt, type GenreQuestion } from "./questions.js";
 export { topDownCollectorSpec } from "./top-down-collector.js";
 
 export const genreSpecs: Record<GameGenre, GameSpec> = {

@@ -5,9 +5,10 @@ import { api } from "../../../../convex/_generated/api";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { CheckCircle2, Gamepad2, LoaderCircle, Send, UploadCloud } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { getQuestionsForPrompt, type GenreQuestion } from "@vega/genres";
 
 type Genre = "platformer" | "endless-runner" | "top-down-collector";
 type Provider = "openai" | "anthropic" | "gemini";
@@ -23,9 +24,8 @@ export function LocalBuilder() {
   const [prompt, setPrompt] = useState("A cheerful platformer with PC controls and collectible stars");
   const [genre, setGenre] = useState<Genre>("platformer");
   const [provider, setProvider] = useState<Provider>("openai");
-  const [theme, setTheme] = useState("neon");
-  const [difficulty, setDifficulty] = useState("balanced");
   const [questionsOpen, setQuestionsOpen] = useState(false);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [gameId, setGameId] = useState<Id<"games"> | null>(null);
   const [refinement, setRefinement] = useState("Make it faster and add double jump");
   const [status, setStatus] = useState("Ready");
@@ -33,6 +33,7 @@ export function LocalBuilder() {
   const [busy, setBusy] = useState(false);
   const current = useQuery(api.games.getCurrent, gameId ? { gameId } : "skip");
   const keys = useQuery(api.apiKeys.listMasked, userId ? { userId } : "skip");
+  const questions = useMemo(() => getQuestionsForPrompt(genre, prompt), [genre, prompt]);
 
   const signUp = async () => {
     setBusy(true);
@@ -49,7 +50,8 @@ export function LocalBuilder() {
     setBusy(true);
     setStatus("Building and playtesting…");
     try {
-      const result = await startGeneration({ userId, prompt, genre, provider, answers: { theme, difficulty } });
+      const selectedAnswers = Object.fromEntries(questions.map((question) => [question.id, answers[question.id] ?? question.defaultOption]));
+      const result = await startGeneration({ userId, prompt, genre, provider, answers: selectedAnswers });
       setGameId(result.gameId);
       setStatus(result.verifyResult.pass ? "Playtest passed" : "Game built with verification notes");
     } catch (error) {
@@ -112,8 +114,15 @@ export function LocalBuilder() {
               <Button onClick={() => setQuestionsOpen(true)} data-testid="continue-questions">Answer questions</Button>
             ) : (
               <div className="question-stack" data-testid="question-cards">
-                <label>Art style<select value={theme} onChange={(event) => setTheme(event.target.value)}><option>neon</option><option>pastel</option><option>voxel</option><option>retro</option></select></label>
-                <label>Difficulty<select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}><option>relaxed</option><option>balanced</option><option>demanding</option></select></label>
+                <p className="question-context">Questions tailored to “{prompt.trim() || "your idea"}”.</p>
+                {questions.map((question) => (
+                  <PromptQuestion
+                    key={question.id}
+                    question={question}
+                    value={answers[question.id] ?? question.defaultOption}
+                    onChange={(value) => setAnswers((currentAnswers) => ({ ...currentAnswers, [question.id]: value }))}
+                  />
+                ))}
                 <Button onClick={generate} disabled={busy} data-testid="generate-submit"><Send size={15} /> Generate and verify</Button>
               </div>
             )}
@@ -136,5 +145,16 @@ export function LocalBuilder() {
         </div>
       )}
     </main>
+  );
+}
+
+function PromptQuestion({ question, value, onChange }: { question: GenreQuestion; value: string; onChange: (value: string) => void }) {
+  return (
+    <label>
+      {question.prompt}
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        {question.options.map((option) => <option key={option}>{option}</option>)}
+      </select>
+    </label>
   );
 }
