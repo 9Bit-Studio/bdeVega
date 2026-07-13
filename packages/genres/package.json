@@ -1,5 +1,5 @@
 {
-  "name": "@vega/spec",
+  "name": "@vega/genres",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "4.4.3"
+    "@vega/spec": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
