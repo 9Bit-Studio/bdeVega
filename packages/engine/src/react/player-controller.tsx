@@ -64,7 +64,7 @@ export function PlayerController({ spec }: PlayerControllerProps) {
       enabledTranslations={enabledTranslations}
       position={[0, spawnY, 0]}
     >
-      <mesh castShadow>
+      <mesh>
         <capsuleGeometry args={[0.35, 0.8, 8, 16]} />
         <meshStandardMaterial
           color={spec.visuals.palette[0]}

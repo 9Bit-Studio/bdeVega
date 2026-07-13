@@ -42,7 +42,6 @@ export function GameRoot({ autoStart = true, className, spec }: GameRootProps) {
               camera={{ fov: 50, position: [0, 5, 12] }}
               dpr={[1, 1.5]}
               gl={{ antialias: true, powerPreference: "high-performance", toneMapping: ACESFilmicToneMapping }}
-              shadows
             >
               <Suspense fallback={null}>
                 <GameScene spec={spec} />

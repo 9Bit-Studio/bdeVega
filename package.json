@@ -17,6 +17,7 @@
     "seed": "node scripts/seed-local.mjs",
     "setup:browsers": "pnpm --filter verify-runner exec playwright install chromium",
     "test": "turbo run test",
+    "test:e2e": "playwright test",
     "typecheck": "turbo run typecheck"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "dotenv": "^17.2.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "turbo": "2.10.4",
     "typescript": "^5.9.3"
   }

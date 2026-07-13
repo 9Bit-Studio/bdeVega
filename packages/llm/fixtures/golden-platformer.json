@@ -1,0 +1,5 @@
+{
+  "model": "gpt-4o-mini",
+  "provider": "openai",
+  "raw": "{\"genre\":\"platformer\",\"confidence\":1}"
+}

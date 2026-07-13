@@ -16,6 +16,8 @@ dist-ssr
 .convex
 .convex.env.local
 coverage
+playwright-report
+test-results
 pnpm-lock.yaml.tmp
 *.tsbuildinfo
 
