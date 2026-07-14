@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Compass, Gamepad2, Home, LibraryBig, LogOut, Plus, Search, Settings } from "lucide-react";
+import { Activity, Compass, Gamepad2, Home, LibraryBig, LogOut, Plus, Search, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/games", label: "My Games", icon: LibraryBig },
   { href: "/explore", label: "Explore", icon: Compass },
+  { href: "/operations", label: "Generation Activity", icon: Activity },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -159,7 +160,7 @@ function AvatarMenu() {
 }
 
 function MobileTabBar({ pathname }: { pathname: string }) {
-  const tabs = [NAV_ITEMS[0], NAV_ITEMS[1], null, NAV_ITEMS[2], NAV_ITEMS[3]];
+  const tabs = [NAV_ITEMS[0], NAV_ITEMS[1], null, NAV_ITEMS[2], NAV_ITEMS[4]];
   return (
     <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
       {tabs.map((tab, index) =>

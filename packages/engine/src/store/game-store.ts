@@ -17,13 +17,15 @@ export interface GameStateSnapshot {
   playerPosition: Vector3State;
   playerVelocity: Vector3State;
   checkpointId: string | null;
+  checkpointPosition: Vector3State | null;
+  respawnRevision: number;
 }
 
 export interface GameStateActions {
+  activateCheckpoint: (checkpointId: string, position: Vector3State) => void;
   addScore: (points: number) => void;
   loseLife: (amount?: number) => void;
   reset: (nextSpec?: GameSpec) => void;
-  setCheckpoint: (checkpointId: string | null) => void;
   setPhase: (phase: GamePhase) => void;
   setPlayerPosition: (position: Vector3State) => void;
   setPlayerVelocity: (velocity: Vector3State) => void;
@@ -45,6 +47,8 @@ function stateFromSpec(spec: GameSpec): GameStateSnapshot {
     playerPosition: origin(),
     playerVelocity: origin(),
     checkpointId: null,
+    checkpointPosition: null,
+    respawnRevision: 0,
   };
 }
 
@@ -53,17 +57,24 @@ export function createGameStore(initialSpec: GameSpec): GameStore {
 
   return createStore<GameStoreState>()((set, get) => ({
     ...stateFromSpec(activeSpec),
+    activateCheckpoint: (checkpointId, checkpointPosition) => set({
+      checkpointId,
+      checkpointPosition: { ...checkpointPosition },
+    }),
     addScore: (points) => set((state) => ({ score: state.score + points })),
     loseLife: (amount = 1) =>
       set((state) => {
         const lives = Math.max(0, state.lives - Math.max(0, amount));
-        return { lives, phase: lives === 0 ? "lost" : state.phase };
+        return {
+          lives,
+          phase: lives === 0 ? "lost" : state.phase,
+          respawnRevision: lives === 0 ? state.respawnRevision : state.respawnRevision + 1,
+        };
       }),
     reset: (nextSpec = activeSpec) => {
       activeSpec = nextSpec;
       set(stateFromSpec(activeSpec));
     },
-    setCheckpoint: (checkpointId) => set({ checkpointId }),
     setPhase: (phase) => set({ phase }),
     setPlayerPosition: (playerPosition) => set({ playerPosition: { ...playerPosition } }),
     setPlayerVelocity: (playerVelocity) => set({ playerVelocity: { ...playerVelocity } }),
@@ -91,5 +102,7 @@ export function getGameSnapshot(store: GameStore): GameStateSnapshot {
     playerPosition: { ...state.playerPosition },
     playerVelocity: { ...state.playerVelocity },
     checkpointId: state.checkpointId,
+    checkpointPosition: state.checkpointPosition ? { ...state.checkpointPosition } : null,
+    respawnRevision: state.respawnRevision,
   };
 }

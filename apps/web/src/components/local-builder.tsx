@@ -2,10 +2,11 @@
 
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
 import { CheckCircle2, Gamepad2, LoaderCircle, Send, UploadCloud } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { getQuestionsForPrompt, type GenreQuestion } from "@vega/genres";
@@ -14,11 +15,14 @@ type Genre = "platformer" | "endless-runner" | "top-down-collector";
 type Provider = "openai" | "anthropic" | "gemini";
 
 export function LocalBuilder() {
-  const ensureUser = useMutation(api.localUsers.ensure);
-  const startGeneration = useAction(api.generation.start);
+  const { signIn } = useAuthActions();
+  const { isAuthenticated } = useConvexAuth();
+  const user = useQuery(api.users.current, isAuthenticated ? {} : "skip");
+  const startGeneration = useMutation(api.generationJobs.start);
+  const cancelGeneration = useMutation(api.generationJobs.cancel);
+  const resumeGeneration = useMutation(api.generationJobs.resume);
   const refineGame = useAction(api.generation.refine);
   const publishGame = useAction(api.publish.publishToVercel);
-  const [userId, setUserId] = useState<Id<"users"> | null>(null);
   const [email, setEmail] = useState("developer@localhost");
   const [name, setName] = useState("Local Developer");
   const [prompt, setPrompt] = useState("A cheerful platformer with PC controls and collectible stars");
@@ -26,19 +30,40 @@ export function LocalBuilder() {
   const [provider, setProvider] = useState<Provider>("openai");
   const [questionsOpen, setQuestionsOpen] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [jobId, setJobId] = useState<Id<"generationJobs"> | null>(null);
   const [gameId, setGameId] = useState<Id<"games"> | null>(null);
   const [refinement, setRefinement] = useState("Make it faster and add double jump");
   const [status, setStatus] = useState("Ready");
   const [publishUrl, setPublishUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const userId = user?._id ?? null;
   const current = useQuery(api.games.getCurrent, gameId ? { gameId } : "skip");
-  const keys = useQuery(api.apiKeys.listMasked, userId ? { userId } : "skip");
+  const job = useQuery(api.generationJobs.get, jobId ? { jobId } : "skip");
+  const keys = useQuery(api.apiKeys.listMasked, userId ? {} : "skip");
   const questions = useMemo(() => getQuestionsForPrompt(genre, prompt), [genre, prompt]);
+  const jobActive = job?.status === "queued" || job?.status === "running" || job?.status === "retrying";
+
+  useEffect(() => {
+    if (job?.status === "succeeded" && job.gameId) {
+      setGameId(job.gameId);
+      const verified = (job.verifyLoops.at(-1) as { pass?: boolean } | undefined)?.pass;
+      setStatus(verified ? "Playtest passed" : "Game built with verification notes");
+    } else if (job?.status === "failed") {
+      setStatus(job.error ?? "Generation failed");
+    } else if (job?.status === "canceled") {
+      setStatus("Generation canceled");
+    } else if (jobActive) {
+      setStatus(`${job.stage} · ${job.progress}%`);
+    }
+  }, [job?.error, job?.gameId, job?.progress, job?.stage, job?.status, job?.verifyLoops, jobActive]);
 
   const signUp = async () => {
     setBusy(true);
     try {
-      setUserId(await ensureUser({ email, name }));
+      const credentials = { email, password: "local-development-password", name };
+      await signIn("password", { ...credentials, flow: "signUp" }).catch(() =>
+        signIn("password", { ...credentials, flow: "signIn" }),
+      );
       setStatus("Signed in locally");
     } finally {
       setBusy(false);
@@ -51,9 +76,9 @@ export function LocalBuilder() {
     setStatus("Building and playtesting…");
     try {
       const selectedAnswers = Object.fromEntries(questions.map((question) => [question.id, answers[question.id] ?? question.defaultOption]));
-      const result = await startGeneration({ userId, prompt, genre, provider, answers: selectedAnswers });
-      setGameId(result.gameId);
-      setStatus(result.verifyResult.pass ? "Playtest passed" : "Game built with verification notes");
+      const result = await startGeneration({ prompt, genre, provider, answers: selectedAnswers });
+      setJobId(result.jobId);
+      setStatus("Generation queued");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Generation failed");
     } finally {
@@ -68,6 +93,8 @@ export function LocalBuilder() {
     try {
       const result = await refineGame({ gameId, request: refinement });
       setStatus(result.verifyResult.pass ? "Refinement passed" : "Refinement saved with verification notes");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Refinement failed — revise the request and try again");
     } finally {
       setBusy(false);
     }
@@ -89,7 +116,7 @@ export function LocalBuilder() {
     <main className="local-shell">
       <header className="local-header">
         <Link href="/" className="local-brand"><Gamepad2 size={18} /> Vega Forge Local</Link>
-        <span className="local-status">{busy ? <LoaderCircle className="spin" size={14} /> : <CheckCircle2 size={14} />} {status}</span>
+        <span className="local-status">{busy || jobActive ? <LoaderCircle className="spin" size={14} /> : <CheckCircle2 size={14} />} {status}</span>
       </header>
 
       {!userId ? (
@@ -123,7 +150,9 @@ export function LocalBuilder() {
                     onChange={(value) => setAnswers((currentAnswers) => ({ ...currentAnswers, [question.id]: value }))}
                   />
                 ))}
-                <Button onClick={generate} disabled={busy} data-testid="generate-submit"><Send size={15} /> Generate and verify</Button>
+                <Button onClick={generate} disabled={busy || jobActive} data-testid="generate-submit"><Send size={15} /> Generate and verify</Button>
+                {jobActive && job ? <Button onClick={() => void cancelGeneration({ jobId: job._id })} variant="outline">Cancel</Button> : null}
+                {(job?.status === "failed" || job?.status === "canceled") ? <Button onClick={() => void resumeGeneration({ jobId: job._id })} variant="outline">Resume</Button> : null}
               </div>
             )}
             <div className="key-strip">Seeded keys: {keys?.length ? keys.map((key) => `${key.provider} …${key.last4}`).join(" · ") : "Replay mode—no key spend"}</div>

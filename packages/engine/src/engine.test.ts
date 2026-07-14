@@ -3,9 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createEngineRuntimeApi,
+  executeTriggerActions,
   createGameStore,
   createInputBindings,
   getGameSnapshot,
+  movingPlatformPosition,
 } from "./index.js";
 
 describe("engine state", () => {
@@ -36,6 +38,31 @@ describe("engine state", () => {
     expect(store.getState().phase).toBe("lost");
     expect(store.getState().timerRemaining).toBe(0);
   });
+
+  it("stores a checkpoint and requests a respawn after a non-terminal death", () => {
+    const store = createGameStore(getGenreSpec("platformer"));
+    store.getState().start();
+    store.getState().activateCheckpoint("midway", { x: 24, y: 2.2, z: 0 });
+    store.getState().loseLife();
+
+    expect(getGameSnapshot(store)).toMatchObject({
+      checkpointId: "midway",
+      checkpointPosition: { x: 24, y: 2.2, z: 0 },
+      lives: 2,
+      phase: "playing",
+      respawnRevision: 1,
+    });
+  });
+
+  it("does not request a respawn after the final life is lost", () => {
+    const spec = structuredClone(getGenreSpec("platformer"));
+    spec.player.lives = 1;
+    const store = createGameStore(spec);
+    store.getState().start();
+    store.getState().loseLife();
+
+    expect(store.getState()).toMatchObject({ lives: 0, phase: "lost", respawnRevision: 0 });
+  });
 });
 
 describe("engine runtime API", () => {
@@ -64,5 +91,31 @@ describe("input bindings", () => {
     ]);
 
     expect(bindings).toEqual([{ name: "left", keys: ["KeyA", "ArrowLeft"] }]);
+  });
+});
+
+describe("entity motion", () => {
+  it("moves from the origin to the declared offset and back deterministically", () => {
+    const motion = { offset: [8, 2, 0] as [number, number, number], duration: 4, phase: 0 };
+    const origin = { x: 10, y: 1, z: 0 };
+
+    expect(movingPlatformPosition(origin, motion, 0)).toEqual(origin);
+    expect(movingPlatformPosition(origin, motion, 2)).toEqual({ x: 18, y: 3, z: 0 });
+    expect(movingPlatformPosition(origin, motion, 4).x).toBeCloseTo(10);
+  });
+});
+
+describe("trigger actions", () => {
+  it("executes only the bounded declarative action set", () => {
+    const store = createGameStore(getGenreSpec("platformer"));
+    store.getState().start();
+
+    executeTriggerActions(store, [
+      { type: "add-score", points: 25 },
+      { type: "lose-life", amount: 1 },
+      { type: "set-phase", phase: "won" },
+    ]);
+
+    expect(store.getState()).toMatchObject({ score: 25, lives: 2, phase: "won" });
   });
 });

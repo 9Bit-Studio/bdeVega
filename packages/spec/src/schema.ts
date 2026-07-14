@@ -65,6 +65,12 @@ export const controlSchema = z.object({
   purpose: z.string().trim().min(1).max(160),
 });
 
+export const triggerActionSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("add-score"), points: z.number().int() }),
+  z.object({ type: z.literal("lose-life"), amount: z.number().int().min(1).max(99).default(1) }),
+  z.object({ type: z.literal("set-phase"), phase: z.enum(["won", "lost"]) }),
+]);
+
 export const levelEntitySchema = z.object({
   id: z.string().trim().min(1).max(80),
   type: z.enum([
@@ -87,7 +93,28 @@ export const levelEntitySchema = z.object({
       spacing: vector3Schema,
     })
     .optional(),
+  motion: z
+    .object({
+      offset: vector3Schema,
+      duration: z.number().positive().max(60),
+      phase: z.number().min(0).max(1).default(0),
+    })
+    .optional(),
+  trigger: z
+    .object({
+      actions: z.array(triggerActionSchema).min(1).max(8),
+      once: z.boolean().default(true),
+    })
+    .optional(),
   properties: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+}).superRefine((entity, context) => {
+  if (entity.type === "trigger" && !entity.trigger) {
+    context.addIssue({
+      code: "custom",
+      message: "Trigger entities require a declarative trigger action block",
+      path: ["trigger"],
+    });
+  }
 });
 
 export const customScriptSchema = z.object({
@@ -171,6 +198,8 @@ export type GameGenre = z.infer<typeof gameGenreSchema>;
 export type GameSpec = z.infer<typeof gameSpecSchema>;
 export type GameControl = z.infer<typeof controlSchema>;
 export type LevelEntity = z.infer<typeof levelEntitySchema>;
+export type EntityMotion = NonNullable<LevelEntity["motion"]>;
+export type TriggerAction = NonNullable<LevelEntity["trigger"]>["actions"][number];
 export type GameAssetPack = z.infer<typeof gameAssetPackSchema>;
 export type CustomScript = z.infer<typeof customScriptSchema>;
 

@@ -1,10 +1,13 @@
-import { CuboidCollider, Physics, RigidBody } from "@react-three/rapier";
+import { CuboidCollider, Physics, RigidBody, type RapierRigidBody } from "@react-three/rapier";
 import type { GameSpec, LevelEntity } from "@vega/spec";
 import { useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Group } from "three";
+import { useStore } from "zustand";
 
 import { CameraController } from "./camera-controller.js";
+import { movingPlatformPosition } from "../core/entity-motion.js";
+import { executeTriggerActions } from "../core/trigger-actions.js";
 import { CoinField, type CoinItem } from "./coin-field.js";
 import { useGameStoreApi } from "./engine-context.js";
 import { PlayerController } from "./player-controller.js";
@@ -20,6 +23,30 @@ interface EntityMarkerProps {
   index: number;
   position: [number, number, number];
   spec: GameSpec;
+}
+
+function MovingPlatform({ entity, position, color }: Pick<EntityMarkerProps, "entity" | "position"> & { color: string }) {
+  const body = useRef<RapierRigidBody>(null);
+  const motion = entity.motion ?? { offset: [0, 2, 0], duration: 3, phase: 0 };
+
+  useFrame((state) => {
+    const next = movingPlatformPosition(
+      { x: position[0], y: position[1], z: position[2] },
+      motion,
+      state.clock.elapsedTime,
+    );
+    body.current?.setNextKinematicTranslation(next);
+  });
+
+  return (
+    <RigidBody ref={body} type="kinematicPosition" colliders={false} position={position}>
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[3, 0.4, 2.5]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.12} roughness={0.55} />
+      </mesh>
+      <CuboidCollider args={[1.5, 0.2, 1.25]} />
+    </RigidBody>
+  );
 }
 
 function GoalBeacon({ color }: { color: string }) {
@@ -65,19 +92,57 @@ function EnemyOrb({ color }: { color: string }) {
   );
 }
 
+function CheckpointBeacon({ active, color }: { active: boolean; color: string }) {
+  return (
+    <group>
+      <mesh castShadow>
+        <cylinderGeometry args={[0.12, 0.16, 1.5, 10]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={active ? 1.5 : 0.25} />
+      </mesh>
+      <mesh castShadow position={[0.38, 0.45, 0]}>
+        <planeGeometry args={[0.75, 0.5]} />
+        <meshStandardMaterial color={active ? "#ffffff" : color} emissive={color} emissiveIntensity={active ? 1 : 0.2} side={2} />
+      </mesh>
+      {active ? <pointLight color={color} intensity={3} distance={5} /> : null}
+    </group>
+  );
+}
+
+function TriggerGate({ color, spent }: { color: string; spent: boolean }) {
+  return (
+    <mesh castShadow>
+      <torusGeometry args={[0.7, 0.12, 8, 24]} />
+      <meshStandardMaterial
+        color={spent ? "#64748b" : color}
+        emissive={color}
+        emissiveIntensity={spent ? 0.05 : 0.8}
+        transparent
+        opacity={spent ? 0.35 : 0.8}
+      />
+    </mesh>
+  );
+}
+
 function EntityMarker({ entity, index, position, spec }: EntityMarkerProps) {
-  const [collected, setCollected] = useState(false);
   const store = useGameStoreApi();
-  if (collected) return null;
+  const [triggered, setTriggered] = useState(false);
+  const checkpointId = `${entity.id}-${index}`;
+  const active = useStore(store, (state) => state.checkpointId === checkpointId);
 
   const onEnter = () => {
-    if (entity.type === "coin") {
-      store.getState().addScore(entity.points ?? 10);
-      setCollected(true);
-    } else if (entity.type === "goal") {
+    if (entity.type === "goal") {
       store.getState().setPhase("won");
     } else if (entity.type === "hazard" || entity.type === "enemy") {
       store.getState().loseLife();
+    } else if (entity.type === "checkpoint") {
+      const state = store.getState();
+      if (state.checkpointId !== checkpointId) {
+        state.activateCheckpoint(checkpointId, { x: position[0], y: position[1] + 1.2, z: position[2] });
+        state.addScore(entity.points ?? spec.rules.scoring.find((rule) => rule.event === "checkpoint")?.points ?? 0);
+      }
+    } else if (entity.type === "trigger" && entity.trigger && !(triggered && entity.trigger.once)) {
+      executeTriggerActions(store, entity.trigger.actions);
+      if (entity.trigger.once) setTriggered(true);
     }
   };
 
@@ -93,13 +158,23 @@ function EntityMarker({ entity, index, position, spec }: EntityMarkerProps) {
         <HazardSpike color="#ef4444" />
       ) : entity.type === "enemy" ? (
         <EnemyOrb color={dangerColor} />
+      ) : entity.type === "checkpoint" ? (
+        <CheckpointBeacon active={active} color={spec.visuals.palette[0] ?? "#2dd4bf"} />
+      ) : entity.type === "trigger" ? (
+        <TriggerGate color={spec.visuals.palette[0] ?? "#2dd4bf"} spent={triggered} />
       ) : (
         <mesh castShadow>
           <boxGeometry args={[0.7, 0.7, 0.7]} />
           <meshStandardMaterial color={dangerColor} emissive={dangerColor} emissiveIntensity={0.6} />
         </mesh>
       )}
-      <CuboidCollider args={[0.45, 0.45, 0.45]} sensor={isSensor} onIntersectionEnter={onEnter} />
+      <CuboidCollider
+        args={entity.type === "checkpoint" ? [0.65, 0.9, 0.65] : [0.45, 0.45, 0.45]}
+        sensor={isSensor}
+        onIntersectionEnter={(event) => {
+          if (event.other.rigidBodyObject?.userData.kind === "player") onEnter();
+        }}
+      />
     </RigidBody>
   );
 }
@@ -165,7 +240,11 @@ export function GameScene({ spec }: GameSceneProps) {
         <CoinField color="#facc15" items={coins} />
         {spec.level.entities.filter((entity) => entity.type !== "coin").flatMap((entity) =>
           entityPositions(entity).map((position, index) => (
-            <EntityMarker key={`${entity.id}-${index}`} entity={entity} index={index} position={position} spec={spec} />
+            entity.type === "moving-platform" ? (
+              <MovingPlatform key={`${entity.id}-${index}`} entity={entity} position={position} color={spec.visuals.palette[0] ?? "#2dd4bf"} />
+            ) : (
+              <EntityMarker key={`${entity.id}-${index}`} entity={entity} index={index} position={position} spec={spec} />
+            )
           )),
         )}
       </Physics>

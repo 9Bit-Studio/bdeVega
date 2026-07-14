@@ -46,7 +46,12 @@ export const endlessRunnerSpec = {
         points: 10,
         pattern: { type: "sequence", origin: [4, 1, 0], count: 10, spacing: [3, 0, 0] },
       },
-      { id: "jump-pad", type: "trigger", properties: { action: "launch", force: 15 } },
+      {
+        id: "speed-gate-bonus",
+        type: "trigger",
+        positions: [[28, 1, 0]],
+        trigger: { once: true, actions: [{ type: "add-score", points: 50 }] },
+      },
     ],
   },
   rules: {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateGameSpec } from "@vega/spec";
+import { validateGameSpecForEngine } from "@vega/spec";
 
 import { genreQuestionBanks, genreSpecs, getGenreSpec, getQuestionsForPrompt } from "./index.js";
 
@@ -13,7 +13,7 @@ describe("genre templates", () => {
   });
 
   it.each(Object.entries(genreSpecs))("validates the %s default", (_genre, spec) => {
-    expect(validateGameSpec(spec).success).toBe(true);
+    expect(validateGameSpecForEngine(spec).success).toBe(true);
   });
 
   it("returns a safe clone instead of mutable shared state", () => {

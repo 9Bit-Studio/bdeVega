@@ -3,6 +3,7 @@ import { chromium } from "playwright";
 
 import { assertionPasses } from "./assertions.js";
 import type { VerifyFailure, VerifyRequest, VerifyResult } from "./types.js";
+import { assertSafeTarget, type TargetPolicy } from "./security.js";
 
 declare global {
   interface Window {
@@ -31,11 +32,27 @@ export async function closeBrowser(): Promise<void> {
   await browser.close();
 }
 
-export async function verifyGame(request: VerifyRequest): Promise<VerifyResult> {
+export async function verifyGame(request: VerifyRequest, targetPolicy?: TargetPolicy): Promise<VerifyResult> {
   const startedAt = Date.now();
   const failures: VerifyFailure[] = [];
   const browser = await getBrowser();
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+
+  if (targetPolicy) {
+    await page.route("**/*", async (route) => {
+      const browserRequest = route.request();
+      if (!browserRequest.isNavigationRequest() || browserRequest.frame() !== page.mainFrame()) {
+        await route.continue();
+        return;
+      }
+      try {
+        await assertSafeTarget(browserRequest.url(), targetPolicy);
+        await route.continue();
+      } catch {
+        await route.abort("blockedbyclient");
+      }
+    });
+  }
 
   page.on("console", (message) => {
     if (message.type() === "error") failures.push({ type: "console", message: message.text() });

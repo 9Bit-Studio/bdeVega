@@ -28,6 +28,7 @@ try {
     "VERCEL_TOKEN",
     "VERCEL_TEAM_ID",
     "VERIFY_RUNNER_URL",
+    "VERIFY_RUNNER_TOKEN",
   ];
   const convexEnv = allowedKeys
     .filter((key) => values[key] !== undefined)
@@ -35,8 +36,7 @@ try {
     .join("\n");
   await writeFile(convexEnvPath, `${convexEnv}\n`, "utf8");
   await run("pnpm", ["exec", "convex", "env", "set", "--from-file", convexEnvPath]);
-  await run("node", ["scripts/seed-local.mjs"]);
-  console.log("[convex-bootstrap] environment synced and local data seeded");
+  console.log("[convex-bootstrap] environment synced");
 } catch (error) {
   console.error("[convex-bootstrap]", error instanceof Error ? error.message : error);
   process.exitCode = 1;

@@ -38,7 +38,7 @@ This starts, with prefixed Turborepo logs:
 - local Convex at `http://127.0.0.1:3210`
 - verify-runner at `http://127.0.0.1:4001`
 
-Convex environment values are synchronized from `.env.local`, then the local test user and encrypted provider keys are seeded automatically. Run `pnpm seed` to seed again while Convex is running.
+Convex environment values are synchronized from `.env.local`. The local builder creates a real password-authenticated Convex session; replay mode does not require seeded provider keys.
 
 ### Environment variables
 
@@ -47,8 +47,12 @@ Convex environment values are synchronized from `.env.local`, then the local tes
 | `NEXT_PUBLIC_CONVEX_URL` | Browser connection to local Convex. |
 | `APP_URL` | URL loaded by the verify-runner. |
 | `VERIFY_RUNNER_URL` | Verification service called by Convex actions; defaults to localhost in development. |
+| `VERIFY_RUNNER_TOKEN` | 32+ character service credential shared only by Convex and the verifier. |
+| `VERIFY_ALLOWED_APP_ORIGINS` | Exact comma-separated app origins the verifier may navigate to. |
+| `VERIFY_ALLOW_PRIVATE_ADDRESSES` | Local-only escape hatch for localhost verification; keep `false` in production. |
+| `VERIFY_MAX_CONCURRENT` / `VERIFY_RATE_LIMIT_PER_MINUTE` | Verifier concurrency and per-instance request limits. |
 | `API_KEY_ENCRYPTION_SECRET` | 32+ character AES-256-GCM secret used only by Convex actions. |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` | Optional BYOK keys stored encrypted by the seed action. |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` | Optional local provider values; user BYOK keys are saved through the authenticated settings flow. |
 | `DEV_MODEL_TIER=cheap` | Forces GPT-4o Mini, Claude Haiku, or Gemini Flash-Lite. |
 | `LLM_REPLAY=true` | Replays fixtures and prevents provider calls. |
 | `LLM_RECORD=true` | Records raw provider responses for later replay. |
@@ -81,7 +85,7 @@ Run only the verify service when debugging it:
 pnpm --filter verify-runner dev
 ```
 
-Its API is `POST http://localhost:4001/verify` with `{ "bundleUrl", "expectations" }`.
+Its API is `POST http://localhost:4001/verify` with `{ "bundleUrl", "expectations" }` and an `Authorization: Bearer <VERIFY_RUNNER_TOKEN>` service header.
 
 ### Manual smoke checklist
 
@@ -112,7 +116,7 @@ The production topology separates the browser app, Convex backend, and Chromium 
    ```
 
    Set `API_KEY_ENCRYPTION_SECRET`, `APP_URL`, `VERIFY_RUNNER_URL`, `LLM_REPLAY=false`, `DEV_MODEL_TIER=cheap`, `PUBLISH_DRY_RUN=true`, and any provider configuration with `npx convex env set --prod NAME VALUE`. Put the resulting production Convex URL in Vercel as `NEXT_PUBLIC_CONVEX_URL`.
-3. Build and deploy [`services/verify-runner/Dockerfile`](./services/verify-runner/Dockerfile) to a container host such as Cloud Run, Fly.io, Railway, or Render. Set its public HTTPS URL as Convex's `VERIFY_RUNNER_URL`. The runner binds to `0.0.0.0` in hosted environments and installs Chromium during the image build.
+3. Build and deploy [`services/verify-runner/Dockerfile`](./services/verify-runner/Dockerfile) to a container host such as Cloud Run, Fly.io, Railway, or Render. Set its public HTTPS URL as Convex's `VERIFY_RUNNER_URL`. Give Convex and the runner the same fresh `VERIFY_RUNNER_TOKEN`, set `VERIFY_ALLOWED_APP_ORIGINS` to the exact production app origin, and keep `VERIFY_ALLOW_PRIVATE_ADDRESSES=false`. The runner binds to `0.0.0.0` in hosted environments and installs Chromium during the image build.
 4. Verify production generation while `PUBLISH_DRY_RUN=true`. When ready, set the shared platform `VERCEL_TOKEN` and (recommended) its `VERCEL_TEAM_ID` in Convex, then switch `PUBLISH_DRY_RUN=false`. No user Vercel credential is used: every generated game project is created in that shared Vercel scope. The latest deployment for the current game version is loaded inside Vega's game screen; unpublished or newly refined games use the built-in player until they are published again.
 
 Keep separate Convex preview/staging and production deployments. Do not copy `.env.local`, local encryption secrets, or local seeded data into production.

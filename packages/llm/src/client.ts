@@ -1,4 +1,4 @@
-import { resolveModel } from "./models.js";
+import { estimateCostUsd, resolveModel } from "./models.js";
 import { providerTransport } from "./providers.js";
 import type {
   FixtureStore,
@@ -23,21 +23,42 @@ export function createLLMClient({ fixtureStore, transport = providerTransport }:
         const fixture = await fixtureStore.read(fixtureId);
         if (!fixture) throw new Error(`Missing LLM replay fixture: ${fixtureId}`);
         return {
+          costUsd: 0,
           data: JSON.parse(fixture.raw) as T,
+          latencyMs: 0,
           model: fixture.model,
           provider: fixture.provider,
           raw: fixture.raw,
           replayed: true,
+          usage: { inputTokens: 0, outputTokens: 0 },
         };
       }
 
-      const raw = await transport({ ...request, model });
+      const startedAt = Date.now();
+      const transportResult = await transport({ ...request, model });
+      const latencyMs = Date.now() - startedAt;
+      const raw = typeof transportResult === "string" ? transportResult : transportResult.raw;
+      const usage = {
+        inputTokens: typeof transportResult === "string" ? 0 : transportResult.usage?.inputTokens ?? 0,
+        outputTokens: typeof transportResult === "string" ? 0 : transportResult.usage?.outputTokens ?? 0,
+      };
+      let data: T;
+      try {
+        data = JSON.parse(raw) as T;
+      } catch {
+        // Preserve malformed structured output so the caller can validate,
+        // repair, and still account for the tokens spent on this attempt.
+        data = raw as T;
+      }
       const response: LLMResponse<T> = {
-        data: JSON.parse(raw) as T,
+        costUsd: estimateCostUsd(model, usage.inputTokens, usage.outputTokens),
+        data,
+        latencyMs,
         model,
         provider: request.provider,
         raw,
         replayed: false,
+        usage,
       };
 
       if (request.record) {

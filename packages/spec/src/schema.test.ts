@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { gameExpectationsSchema, gameSpecJsonSchema, validateGameSpec } from "./index.js";
+import {
+  engineCapabilityMatrix,
+  gameExpectationsSchema,
+  gameSpecJsonSchema,
+  gameSpecPatchJsonSchema,
+  starterAssetPack,
+  validateGameSpec,
+  validateGameSpecForEngine,
+} from "./index.js";
 
 const validSpec = {
   schemaVersion: "1",
@@ -86,9 +94,54 @@ describe("GameSpec", () => {
   it("exports a provider-ready JSON Schema", () => {
     expect(gameSpecJsonSchema.$schema).toBe("https://json-schema.org/draft/2020-12/schema");
     expect(gameSpecJsonSchema.type).toBe("object");
+    expect(gameSpecPatchJsonSchema.type).toBe("object");
   });
 
   it("defaults verification settings for local playtests", () => {
     expect(gameExpectationsSchema.parse({})).toEqual({ fpsFloor: 30, assertions: [] });
+  });
+
+  it("publishes explicit runtime support and rejects inert entity features", () => {
+    expect(engineCapabilityMatrix.checkpoints.status).toBe("supported");
+    expect(engineCapabilityMatrix["moving-platforms"]).toMatchObject({ status: "supported", policy: "allow" });
+    expect(engineCapabilityMatrix["trigger-actions"]).toMatchObject({ status: "supported", policy: "allow" });
+
+    const result = validateGameSpecForEngine({
+      ...validSpec,
+      level: {
+        ...validSpec.level,
+        entities: [{ id: "scripted", type: "platform", positions: [[4, 1, 0]] }],
+      },
+      scripts: { custom: [{ hook: "onStart", code: "score.add(100)" }] },
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.issues[0]).toMatchObject({ feature: "custom-scripts", severity: "error" });
+  });
+
+  it("warns when a supported fallback exists", () => {
+    const result = validateGameSpecForEngine({
+      ...validSpec,
+      player: { ...validSpec.player, doubleJump: true },
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.warnings).toEqual([
+      expect.objectContaining({ feature: "double-jump", severity: "warning" }),
+    ]);
+  });
+
+  it("rejects asset URLs that did not come from the approved pipeline", () => {
+    const result = validateGameSpecForEngine({
+      ...validSpec,
+      assets: {
+        ...starterAssetPack,
+        id: "stellar-trail-starter",
+        player: { ...starterAssetPack.player, imageUrl: "https://unapproved.example/player.png" },
+      },
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.issues[0]).toMatchObject({ feature: "custom-assets" });
   });
 });

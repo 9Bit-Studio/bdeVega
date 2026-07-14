@@ -38,4 +38,31 @@ describe("LLM adapter", () => {
 
     await expect(client.generate({ ...request, replay: true })).rejects.toThrow("Missing LLM replay fixture");
   });
+
+  it("captures usage, estimated cost, and latency for provider calls", async () => {
+    const client = createLLMClient({
+      transport: vi.fn().mockResolvedValue({
+        raw: '{"genre":"platformer"}',
+        usage: { inputTokens: 1_000, outputTokens: 500 },
+      }),
+    });
+
+    const response = await client.generate({ ...request, model: "gpt-4.1" });
+
+    expect(response.usage).toEqual({ inputTokens: 1_000, outputTokens: 500 });
+    expect(response.costUsd).toBe(0.006);
+    expect(response.latencyMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("returns malformed structured output for caller-directed repair with usage intact", async () => {
+    const client = createLLMClient({
+      transport: vi.fn().mockResolvedValue({ raw: "not-json", usage: { inputTokens: 20, outputTokens: 4 } }),
+    });
+
+    const response = await client.generate({ ...request, model: "gpt-4.1" });
+
+    expect(response.data).toBe("not-json");
+    expect(response.usage).toEqual({ inputTokens: 20, outputTokens: 4 });
+    expect(response.costUsd).toBeGreaterThan(0);
+  });
 });

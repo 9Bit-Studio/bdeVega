@@ -14,7 +14,6 @@
     "lint": "turbo run lint",
     "postinstall": "pnpm --filter verify-runner exec playwright install chromium",
     "predev": "node scripts/prepare-local-env.mjs",
-    "seed": "node scripts/seed-local.mjs",
     "setup:browsers": "pnpm --filter verify-runner exec playwright install chromium",
     "test": "turbo run test",
     "test:e2e": "playwright test",

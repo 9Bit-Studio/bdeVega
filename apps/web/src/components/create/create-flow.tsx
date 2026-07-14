@@ -1,9 +1,10 @@
 "use client";
 
 import { api } from "../../../../../convex/_generated/api";
-import { useAction, useQuery } from "convex/react";
+import type { Id } from "../../../../../convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, Check, Dices, Gem, KeyRound, LoaderCircle, Mountain, Sparkles, Zap } from "lucide-react";
+import { ArrowLeft, Check, Dices, Gem, KeyRound, LoaderCircle, Mountain, RotateCcw, Sparkles, X, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
@@ -62,9 +63,11 @@ const spring = { type: "spring" as const, stiffness: 420, damping: 30 };
 export function CreateFlow() {
   const { session } = useSession();
   const router = useRouter();
-  const startGeneration = useAction(api.generation.start);
-  const settings = useQuery(api.settings.get, session ? { userId: session.userId } : "skip");
-  const keys = useQuery(api.apiKeys.listMasked, session ? { userId: session.userId } : "skip");
+  const startGeneration = useMutation(api.generationJobs.start);
+  const cancelGeneration = useMutation(api.generationJobs.cancel);
+  const resumeGeneration = useMutation(api.generationJobs.resume);
+  const settings = useQuery(api.settings.get, session ? {} : "skip");
+  const keys = useQuery(api.apiKeys.listMasked, session ? {} : "skip");
   const reducedMotion = useReducedMotion();
 
   const [phase, setPhase] = useState<"compose" | "questions" | "building">("compose");
@@ -75,8 +78,9 @@ export function CreateFlow() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [buildError, setBuildError] = useState<string | null>(null);
-  const [buildStep, setBuildStep] = useState(0);
+  const [jobId, setJobId] = useState<Id<"generationJobs"> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const job = useQuery(api.generationJobs.get, jobId ? { jobId } : "skip");
 
   useEffect(() => {
     if (reducedMotion) return;
@@ -98,10 +102,8 @@ export function CreateFlow() {
   }, []);
 
   useEffect(() => {
-    if (phase !== "building") return;
-    const timer = setInterval(() => setBuildStep((current) => Math.min(current + 1, 2)), 2600);
-    return () => clearInterval(timer);
-  }, [phase]);
+    if (job?.status === "succeeded" && job.gameId) router.push(`/games/${job.gameId}`);
+  }, [job?.gameId, job?.status, router]);
 
   const questions = useMemo(() => getQuestionsForPrompt(genre, prompt), [genre, prompt]);
   const totalSteps = 1 + questions.length;
@@ -129,12 +131,11 @@ export function CreateFlow() {
   const build = async (finalAnswers: Record<string, string>) => {
     if (!session) return;
     setPhase("building");
-    setBuildStep(0);
     setBuildError(null);
     try {
       const filled = Object.fromEntries(questions.map((question) => [question.id, finalAnswers[question.id] ?? question.defaultOption]));
-      const result = await startGeneration({ userId: session.userId, prompt: prompt.trim(), genre, answers: filled });
-      router.push(`/games/${result.gameId}`);
+      const result = await startGeneration({ prompt: prompt.trim(), genre, answers: filled });
+      setJobId(result.jobId);
     } catch (error) {
       setBuildError(error instanceof Error ? error.message : "Generation failed — try again");
       setPhase("questions");
@@ -377,18 +378,21 @@ export function CreateFlow() {
             >
               <h2 className="font-display text-2xl font-bold tracking-tight">Building your game…</h2>
               <p className="mt-1 text-sm text-muted-foreground">“{prompt.trim().slice(0, 80)}”</p>
+              <div className="mt-5 h-2 overflow-hidden rounded-full bg-muted" aria-label={`Generation ${job?.progress ?? 0}% complete`}>
+                <motion.div className="h-full gradient-warm" animate={{ width: `${job?.progress ?? 3}%` }} />
+              </div>
               <ul className="mt-6 grid gap-3">
                 {["Writing the game spec", "Building the world", "Playtesting controls"].map((label, index) => (
                   <motion.li
                     key={label}
                     initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: index <= buildStep ? 1 : 0.35, x: 0 }}
+                    animate={{ opacity: index <= (job?.checkpoint === "persisted" || job?.checkpoint === "verified" ? 2 : job?.checkpoint === "generated" ? 1 : 0) ? 1 : 0.35, x: 0 }}
                     transition={{ ...spring, delay: index * 0.12 }}
                     className="flex items-center gap-3 text-sm"
                   >
-                    {index < buildStep ? (
+                    {index < (job?.checkpoint === "persisted" || job?.checkpoint === "verified" ? 2 : job?.checkpoint === "generated" ? 1 : 0) ? (
                       <Check className="size-4 text-accent" />
-                    ) : index === buildStep ? (
+                    ) : index === (job?.checkpoint === "persisted" || job?.checkpoint === "verified" ? 2 : job?.checkpoint === "generated" ? 1 : 0) && job?.status !== "failed" && job?.status !== "canceled" ? (
                       <LoaderCircle className="size-4 animate-spin text-primary" />
                     ) : (
                       <span className="size-4 rounded-full border border-border" />
@@ -397,6 +401,21 @@ export function CreateFlow() {
                   </motion.li>
                 ))}
               </ul>
+              {job?.status === "retrying" ? <p className="mt-5 text-xs text-accent">Retrying safely after a transient {job.stage} failure…</p> : null}
+              {job?.error ? <p className="mt-5 rounded-xl border border-primary/40 bg-primary/10 p-3 text-sm text-primary" role="alert">{job.error}</p> : null}
+              <div className="mt-6 flex gap-3">
+                {job && (job.status === "failed" || job.status === "canceled") ? (
+                  <button type="button" onClick={() => void resumeGeneration({ jobId: job._id })} className="flex flex-1 items-center justify-center gap-2 rounded-xl gradient-warm px-4 py-2.5 text-sm font-bold text-primary-foreground">
+                    <RotateCcw className="size-4" /> Resume
+                  </button>
+                ) : null}
+                {job && (job.status === "queued" || job.status === "running" || job.status === "retrying") ? (
+                  <button type="button" onClick={() => void cancelGeneration({ jobId: job._id })} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground">
+                    <X className="size-4" /> Cancel
+                  </button>
+                ) : null}
+                <Link href="/operations" className="flex flex-1 items-center justify-center rounded-xl border border-border px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground">View activity</Link>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

@@ -21,14 +21,29 @@ export interface GenerateRequest {
 }
 
 export interface LLMResponse<T = unknown> {
+  costUsd: number;
   data: T;
+  latencyMs: number;
   model: string;
   provider: LLMProvider;
   raw: string;
   replayed: boolean;
+  usage: LLMUsage;
 }
 
-export type ProviderTransport = (request: GenerateRequest & { model: string }) => Promise<string>;
+export interface LLMUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface ProviderTransportResult {
+  raw: string;
+  usage?: Partial<LLMUsage>;
+}
+
+export type ProviderTransport = (
+  request: GenerateRequest & { model: string },
+) => Promise<string | ProviderTransportResult>;
 
 export interface FixtureRecord {
   model: string;

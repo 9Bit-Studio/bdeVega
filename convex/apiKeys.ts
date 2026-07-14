@@ -3,6 +3,7 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
 import { encryptApiKey } from "./lib/crypto";
+import { requireCurrentUser } from "./lib/authz";
 
 export const upsert = internalMutation({
   args: {
@@ -59,17 +60,17 @@ async function validateKey(provider: string, key: string): Promise<{ ok: boolean
 
 export const save = action({
   args: {
-    userId: v.id("users"),
     provider: v.union(v.literal("openai"), v.literal("anthropic"), v.literal("gemini")),
     key: v.string(),
   },
   handler: async (ctx, input): Promise<{ ok: boolean; message?: string }> => {
+    const userId = await requireCurrentUser(ctx);
     const key = input.key.trim();
     if (key.length < 8) return { ok: false, message: "That key looks too short" };
     const validation = await validateKey(input.provider, key);
     if (!validation.ok) return validation;
     await ctx.runMutation(internal.apiKeys.upsert, {
-      userId: input.userId,
+      userId,
       provider: input.provider,
       encryptedKey: await encryptApiKey(key),
       last4: key.slice(-4),
@@ -79,9 +80,10 @@ export const save = action({
 });
 
 export const listMasked = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, input) => {
-    const keys = await ctx.db.query("apiKeys").filter((query) => query.eq(query.field("userId"), input.userId)).collect();
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireCurrentUser(ctx);
+    const keys = await ctx.db.query("apiKeys").filter((query) => query.eq(query.field("userId"), userId)).collect();
     return keys.map(({ provider, last4, validatedAt }) => ({ provider, last4, validatedAt }));
   },
 });

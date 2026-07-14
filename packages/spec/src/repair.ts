@@ -9,21 +9,29 @@ export interface GameSpecRepairContext {
 }
 
 export interface GameSpecRepairResult {
-  defaulted: boolean;
   repairAttempts: number;
   spec: GameSpec;
 }
 
 export interface GameSpecRepairOptions {
   candidate: unknown;
-  fallback: GameSpec;
   maxAttempts?: number;
   repair: (context: GameSpecRepairContext) => Promise<unknown>;
 }
 
+export class GameSpecRepairError extends Error {
+  constructor(
+    public readonly issues: z.core.$ZodIssue[],
+    public readonly repairAttempts: number,
+  ) {
+    const fields = issues.slice(0, 5).map((issue) => issue.path.join(".") || "root").join(", ");
+    super(`Game spec is still invalid after ${repairAttempts} repair attempts. Fix these fields: ${fields}`);
+    this.name = "GameSpecRepairError";
+  }
+}
+
 export async function validateGameSpecWithRepair({
   candidate,
-  fallback,
   maxAttempts = 2,
   repair,
 }: GameSpecRepairOptions): Promise<GameSpecRepairResult> {
@@ -32,7 +40,7 @@ export async function validateGameSpecWithRepair({
   for (let attempt = 0; attempt <= maxAttempts; attempt += 1) {
     const result = gameSpecSchema.safeParse(current);
     if (result.success) {
-      return { defaulted: false, repairAttempts: attempt, spec: result.data };
+      return { repairAttempts: attempt, spec: result.data };
     }
 
     if (attempt < maxAttempts) {
@@ -40,9 +48,7 @@ export async function validateGameSpecWithRepair({
     }
   }
 
-  return {
-    defaulted: true,
-    repairAttempts: maxAttempts,
-    spec: gameSpecSchema.parse(fallback),
-  };
+  const finalResult = gameSpecSchema.safeParse(current);
+  if (finalResult.success) return { repairAttempts: maxAttempts, spec: finalResult.data };
+  throw new GameSpecRepairError(finalResult.error.issues, maxAttempts);
 }

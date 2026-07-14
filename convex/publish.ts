@@ -2,6 +2,7 @@ import { action, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
+import { requireGameOwner } from "./lib/authz";
 
 export const record = internalMutation({
   args: {
@@ -26,9 +27,10 @@ export const publishToVercel = action({
     };
   }> => {
     const current: {
-      game: { currentVersionId?: Id<"gameVersions"> };
+      game: { userId: Id<"users">; currentVersionId?: Id<"gameVersions"> };
       version: { _id: Id<"gameVersions">; spec: unknown; expectations: unknown };
     } | null = await ctx.runQuery(internal.games.getCurrentInternal, { gameId: input.gameId });
+    await requireGameOwner(ctx, input.gameId, current?.game as { userId: Id<"users"> } | null);
     if (!current) throw new Error("Game not found");
     const projectName = `vega-${input.gameId.slice(-8)}`;
     const appUrl = process.env.APP_URL ?? "http://127.0.0.1:3000";

@@ -1,6 +1,5 @@
 "use client";
 
-import type { Id } from "../../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../../convex/_generated/api";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
@@ -20,8 +19,8 @@ const PROVIDERS: { id: Provider; name: string; blurb: string }[] = [
 
 export default function SettingsPage() {
   const { session } = useSession();
-  const settings = useQuery(api.settings.get, session ? { userId: session.userId } : "skip");
-  const keys = useQuery(api.apiKeys.listMasked, session ? { userId: session.userId } : "skip");
+  const settings = useQuery(api.settings.get, session ? {} : "skip");
+  const keys = useQuery(api.apiKeys.listMasked, session ? {} : "skip");
   const saveSettings = useMutation(api.settings.save);
 
   if (!session || !settings || keys === undefined) {
@@ -35,7 +34,6 @@ export default function SettingsPage() {
 
   const update = (patch: Partial<{ defaultProvider: Provider; modelTiers: Record<Provider, Tier> }>) =>
     saveSettings({
-      userId: session.userId,
       defaultProvider: patch.defaultProvider ?? settings.defaultProvider,
       modelTiers: patch.modelTiers ?? settings.modelTiers,
     });
@@ -52,7 +50,6 @@ export default function SettingsPage() {
           <ProviderCard
             key={provider.id}
             provider={provider}
-            userId={session.userId}
             savedKey={keys.find((key) => key.provider === provider.id) ?? null}
             tier={settings.modelTiers[provider.id]}
             isDefault={settings.defaultProvider === provider.id}
@@ -65,9 +62,8 @@ export default function SettingsPage() {
   );
 }
 
-function ProviderCard({ provider, userId, savedKey, tier, isDefault, onTierChange, onMakeDefault }: {
+function ProviderCard({ provider, savedKey, tier, isDefault, onTierChange, onMakeDefault }: {
   provider: { id: Provider; name: string; blurb: string };
-  userId: Id<"users">;
   savedKey: { last4: string } | null;
   tier: Tier;
   isDefault: boolean;
@@ -85,7 +81,7 @@ function ProviderCard({ provider, userId, savedKey, tier, isDefault, onTierChang
     if (!draft.trim()) return;
     setBusy(true);
     setError(null);
-    const result = await saveKey({ userId, provider: provider.id, key: draft.trim() }).catch(() => ({ ok: false as const, message: "Something went wrong saving the key" }));
+    const result = await saveKey({ provider: provider.id, key: draft.trim() }).catch(() => ({ ok: false as const, message: "Something went wrong saving the key" }));
     setBusy(false);
     if (result.ok) {
       setDraft("");

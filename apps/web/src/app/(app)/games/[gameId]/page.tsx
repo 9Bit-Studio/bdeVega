@@ -74,6 +74,12 @@ export default function GamePlayerPage() {
 
   const { game, version, publishedUrl } = current;
   const verify = version.verifyResult as { pass?: boolean; pending?: boolean; failures?: { message?: string }[] } | undefined;
+  const generation = version.generation as {
+    costUsd?: number;
+    latencyMs?: number;
+    model?: string;
+    validation?: { attempts?: number; repaired?: boolean; success?: boolean };
+  } | undefined;
   const verifying = Boolean(verify?.pending) || busy === "refine";
 
   const checklist: { label: string; state: "done" | "active" | "failed" }[] = [
@@ -146,6 +152,14 @@ export default function GamePlayerPage() {
                 <li key={index} className="text-xs text-muted-foreground">{failure.message ?? "Unknown issue"}</li>
               ))}
             </ul>
+          ) : null}
+          {generation ? (
+            <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
+              <dt>Model</dt><dd className="truncate text-right">{generation.model ?? "unknown"}</dd>
+              <dt>Generation</dt><dd className="text-right">{generation.latencyMs ?? 0} ms</dd>
+              <dt>Cost</dt><dd className="text-right">${(generation.costUsd ?? 0).toFixed(6)}</dd>
+              <dt>Validation</dt><dd className="text-right">{generation.validation?.success ? "Passed" : "Failed"}{generation.validation?.repaired ? ` after ${generation.validation.attempts} attempts` : ""}</dd>
+            </dl>
           ) : null}
         </section>
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { validateGameSpecWithRepair } from "./repair.js";
+import { GameSpecRepairError, validateGameSpecWithRepair } from "./repair.js";
 import { starterAssetPack } from "./schema.js";
 
 const fallback = {
@@ -34,25 +34,20 @@ describe("GameSpec repair loop", () => {
   it("returns a repaired spec before exhausting retries", async () => {
     const repair = vi.fn().mockResolvedValue(fallback);
 
-    const result = await validateGameSpecWithRepair({ candidate: { broken: true }, fallback, repair });
+    const result = await validateGameSpecWithRepair({ candidate: { broken: true }, repair });
 
-    expect(result.defaulted).toBe(false);
     expect(result.repairAttempts).toBe(1);
     expect(repair).toHaveBeenCalledOnce();
   });
 
-  it("uses the working genre fallback after failed repairs", async () => {
+  it("throws an actionable error instead of silently substituting a fallback", async () => {
     const repair = vi.fn().mockResolvedValue({ still: "broken" });
 
-    const result = await validateGameSpecWithRepair({
+    await expect(validateGameSpecWithRepair({
       candidate: null,
-      fallback,
       maxAttempts: 2,
       repair,
-    });
-
-    expect(result.defaulted).toBe(true);
-    expect(result.spec.meta.genre).toBe("platformer");
+    })).rejects.toBeInstanceOf(GameSpecRepairError);
     expect(repair).toHaveBeenCalledTimes(2);
   });
 });

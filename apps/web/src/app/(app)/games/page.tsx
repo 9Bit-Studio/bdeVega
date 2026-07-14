@@ -19,7 +19,7 @@ export default function MyGamesPage() {
 function MyGames() {
   const { session } = useSession();
   const query = useSearchParams().get("q")?.toLowerCase() ?? "";
-  const games = useQuery(api.games.listWithMeta, session ? { userId: session.userId } : "skip");
+  const games = useQuery(api.games.listWithMeta, session ? {} : "skip");
   const filtered = games?.filter((game) => game.title.toLowerCase().includes(query));
 
   return (

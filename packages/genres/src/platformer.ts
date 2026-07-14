@@ -21,21 +21,21 @@ export const platformerSpec = {
     controller: "platformer",
     speed: 7,
     jumpForce: 8.5,
-    doubleJump: true,
+    doubleJump: false,
     lives: 3,
     model: "sprite",
   },
   controls: [
     { key: "KeyA", action: "left", purpose: "Run left" },
     { key: "KeyD", action: "right", purpose: "Run right" },
-    { key: "Space", action: "jump", purpose: "Jump or double jump" },
+    { key: "Space", action: "jump", purpose: "Jump" },
   ],
   camera: { type: "side", smoothing: 0.1, shake: true },
   level: {
     generator: "authored",
     chunks: [
       { id: "intro", length: 24, difficulty: 1 },
-      { id: "moving-platforms", length: 30, difficulty: 2 },
+      { id: "midway", length: 30, difficulty: 2 },
       { id: "final-climb", length: 28, difficulty: 3 },
     ],
     entities: [
@@ -46,11 +46,18 @@ export const platformerSpec = {
         pattern: { type: "arc", origin: [4, 2, 0], count: 8, spacing: [2, 0.45, 0] },
       },
       {
-        id: "moving-bridge",
-        type: "moving-platform",
-        positions: [[34, 3, 0], [42, 5, 0]],
+        id: "midway-checkpoint",
+        type: "checkpoint",
+        points: 100,
+        positions: [[30, 1, 0]],
       },
-      { id: "exit-beacon", type: "goal", positions: [[78, 8, 0]] },
+      {
+        id: "moving-lift",
+        type: "moving-platform",
+        positions: [[46, 0.5, 0]],
+        motion: { offset: [0, 3, 0], duration: 3.5, phase: 0 },
+      },
+      { id: "exit-beacon", type: "goal", positions: [[78, 1, 0]] },
     ],
   },
   rules: {

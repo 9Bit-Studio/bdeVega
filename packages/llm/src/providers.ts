@@ -20,7 +20,13 @@ export const providerTransport: ProviderTransport = async (request) => {
         },
       },
     });
-    return response.output_text;
+    return {
+      raw: response.output_text,
+      usage: {
+        inputTokens: response.usage?.input_tokens ?? 0,
+        outputTokens: response.usage?.output_tokens ?? 0,
+      },
+    };
   }
 
   if (request.provider === "anthropic") {
@@ -35,7 +41,13 @@ export const providerTransport: ProviderTransport = async (request) => {
     });
     const toolUse = response.content.find((block) => block.type === "tool_use");
     if (!toolUse || toolUse.type !== "tool_use") throw new Error("Anthropic returned no structured tool result");
-    return JSON.stringify(toolUse.input);
+    return {
+      raw: JSON.stringify(toolUse.input),
+      usage: {
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+      },
+    };
   }
 
   const client = new GoogleGenAI({ apiKey: request.apiKey });
@@ -49,5 +61,11 @@ export const providerTransport: ProviderTransport = async (request) => {
     },
   });
   if (!response.text) throw new Error("Gemini returned an empty structured response");
-  return response.text;
+  return {
+    raw: response.text,
+    usage: {
+      inputTokens: response.usageMetadata?.promptTokenCount ?? 0,
+      outputTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
+    },
+  };
 };

@@ -1,6 +1,6 @@
 import { GameRoot } from "@vega/engine";
 import { genreSpecs } from "@vega/genres";
-import { validateGameSpec, type GameGenre, type GameSpec } from "@vega/spec";
+import { validateGameSpecForEngine, type GameGenre, type GameSpec } from "@vega/spec";
 import { useEffect, useMemo, useState } from "react";
 
 const formatSpec = (spec: GameSpec) => JSON.stringify(spec, null, 2);
@@ -12,12 +12,16 @@ export function EnginePlayground() {
 
   const validation = useMemo(() => {
     try {
-      const result = validateGameSpec(JSON.parse(source));
+      const result = validateGameSpecForEngine(JSON.parse(source));
       return result.success
-        ? { errors: [], spec: result.data }
-        : { errors: result.issues.map((issue) => `${issue.path.join(".") || "spec"}: ${issue.message}`) };
+        ? {
+            errors: [],
+            spec: result.data,
+            warnings: result.warnings.map((issue) => `${issue.path.join(".") || "spec"}: ${issue.message}`),
+          }
+        : { errors: result.issues.map((issue) => `${issue.path.join(".") || "spec"}: ${issue.message}`), warnings: [] };
     } catch (error) {
-      return { errors: [error instanceof Error ? error.message : "Invalid JSON"] };
+      return { errors: [error instanceof Error ? error.message : "Invalid JSON"], warnings: [] };
     }
   }, [source]);
 
@@ -26,6 +30,7 @@ export function EnginePlayground() {
   }, [validation]);
 
   const errors = validation.errors;
+  const warnings = validation.warnings;
 
   const selectGenre = (nextGenre: GameGenre) => {
     const nextSpec = structuredClone(genreSpecs[nextGenre]);
@@ -57,7 +62,9 @@ export function EnginePlayground() {
         <section className="editor-panel">
           <div className="editor-heading">
             <h2>GameSpec JSON</h2>
-            <span className={errors.length ? "invalid" : "valid"}>{errors.length ? `${errors.length} errors` : "Valid"}</span>
+            <span className={errors.length ? "invalid" : "valid"}>
+              {errors.length ? `${errors.length} errors` : warnings.length ? `Valid with ${warnings.length} warnings` : "Valid"}
+            </span>
           </div>
           <textarea
             aria-label="GameSpec JSON editor"
@@ -67,6 +74,7 @@ export function EnginePlayground() {
           />
           <div className="errors" aria-live="polite">
             {errors.slice(0, 8).map((error) => <p key={error}>{error}</p>)}
+            {warnings.slice(0, 8).map((warning) => <p key={warning}>Warning: {warning}</p>)}
           </div>
         </section>
       </div>

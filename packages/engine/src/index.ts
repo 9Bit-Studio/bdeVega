@@ -1,4 +1,6 @@
 export { createInputBindings, type EngineInputBinding } from "./core/input.js";
+export { movingPlatformPosition } from "./core/entity-motion.js";
+export { executeTriggerActions } from "./core/trigger-actions.js";
 export { installGameTestApi, type GameTestApi } from "./core/test-api.js";
 export {
   createEngineRuntimeApi,

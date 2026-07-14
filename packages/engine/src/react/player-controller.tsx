@@ -18,11 +18,23 @@ export function PlayerController({ spec }: PlayerControllerProps) {
   const spawnY = spec.player.controller === "topdown" ? 0.8 : 2;
   const lastGroundedAt = useRef(0);
   const lastJumpAt = useRef(-1);
+  const handledRespawnRevision = useRef(0);
 
   useFrame((frame, delta) => {
     const rigidBody = body.current;
     const state = store.getState();
-    if (!rigidBody || state.phase !== "playing") return;
+    if (!rigidBody) return;
+
+    if (state.respawnRevision !== handledRespawnRevision.current) {
+      handledRespawnRevision.current = state.respawnRevision;
+      const respawn = state.checkpointPosition ?? { x: 0, y: spawnY, z: 0 };
+      rigidBody.setTranslation(respawn, true);
+      rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      state.setPlayerPosition(respawn);
+      state.setPlayerVelocity({ x: 0, y: 0, z: 0 });
+    }
+
+    if (state.phase !== "playing") return;
 
     const keys = getKeys() as Record<string, boolean>;
     const velocity = rigidBody.linvel();
@@ -70,8 +82,6 @@ export function PlayerController({ spec }: PlayerControllerProps) {
 
     if (position.y < spec.world.bounds.y.min) {
       state.loseLife();
-      rigidBody.setTranslation({ x: 0, y: spawnY, z: 0 }, true);
-      rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
     }
   });
 
@@ -85,6 +95,7 @@ export function PlayerController({ spec }: PlayerControllerProps) {
       enabledRotations={[false, false, false]}
       enabledTranslations={enabledTranslations}
       position={[0, spawnY, 0]}
+      userData={{ kind: "player" }}
     >
       {spec.player.model === "sprite" ? <SpritePlayer asset={spec.assets.player} /> : (
         <mesh castShadow>
