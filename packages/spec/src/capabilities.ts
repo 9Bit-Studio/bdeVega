@@ -24,9 +24,9 @@ export type EngineCapabilityId =
  */
 export const engineCapabilityMatrix = Object.freeze({
   "custom-assets": {
-    status: "unsupported",
-    policy: "reject",
-    description: "Only asset packs issued by the trusted asset pipeline may be loaded.",
+    status: "supported",
+    policy: "allow",
+    description: "Uploaded packs load only through approved first-party asset routes.",
   },
   checkpoints: {
     status: "supported",
@@ -85,7 +85,20 @@ export function assessEngineCapabilities(spec: GameSpec): EngineCapabilityIssue[
 
   if (spec.player.doubleJump) add("double-jump", ["player", "doubleJump"]);
   if (spec.scripts.custom.length > 0) add("custom-scripts", ["scripts", "custom"]);
-  if (JSON.stringify(spec.assets) !== JSON.stringify(starterAssetPack)) add("custom-assets", ["assets"]);
+  const isStarterPack = JSON.stringify(spec.assets) === JSON.stringify(starterAssetPack);
+  const firstPartyAssetUrl = /^\/api\/assets\/[a-z0-9]+$/i;
+  const isApprovedUploadPack = spec.assets.id.startsWith("upload-pack:")
+    && firstPartyAssetUrl.test(spec.assets.player.imageUrl)
+    && firstPartyAssetUrl.test(spec.assets.background.imageUrl)
+    && (spec.assets.audio.musicUrl === null || firstPartyAssetUrl.test(spec.assets.audio.musicUrl));
+  if (!isStarterPack && !isApprovedUploadPack) {
+    issues.push({
+      feature: "custom-assets",
+      path: ["assets"],
+      severity: "error",
+      message: "Custom assets must use an upload-pack id and approved /api/assets routes.",
+    });
+  }
 
   return issues;
 }

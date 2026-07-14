@@ -162,7 +162,7 @@ export async function generateSpec(ctx: ActionCtx, input: {
         record: process.env.LLM_RECORD === "true",
         fixtureId,
         system: attempt === 1
-          ? "Create a complete GameSpec JSON that matches the supplied schema. Return JSON only. Checkpoints, moving-platform entities with explicit motion, and trigger entities with declarative actions are supported. Do not use custom scripts, double jump, or non-starter assets because the runtime does not support them yet."
+          ? "Create a complete GameSpec JSON that matches the supplied schema. Return JSON only. Checkpoints, moving-platform entities with explicit motion, and trigger entities with declarative actions are supported. Do not use custom scripts, double jump, or invent asset URLs; uploaded asset packs are attached only by the trusted asset pipeline."
           : "Repair only the invalid fields identified below, preserve valid fields, and return the complete corrected GameSpec JSON.",
         messages: [{
           role: "user",

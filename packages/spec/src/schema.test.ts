@@ -144,4 +144,19 @@ describe("GameSpec", () => {
     expect(result.success).toBe(false);
     if (!result.success) expect(result.issues[0]).toMatchObject({ feature: "custom-assets" });
   });
+
+  it("accepts asset packs that resolve exclusively through the approved route", () => {
+    const result = validateGameSpecForEngine({
+      ...validSpec,
+      assets: {
+        id: "upload-pack:abc123",
+        artDirection: "Creator-owned reviewed pixel art",
+        player: { imageUrl: "/api/assets/player123", width: 1.9, height: 2.4 },
+        background: { imageUrl: "/api/assets/background123", width: 28, height: 15.75 },
+        audio: { musicUrl: "/api/assets/music123", volume: 0.2 },
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
 });
