@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { SessionProvider, useSession } from "@/components/app/session-provider";
+import { BackgroundStage } from "@/components/create/background-stage";
 
 const IDEA_CHIPS = [
   "A marshmallow knight bouncing between clouds",
@@ -50,6 +51,7 @@ function Landing() {
 
   return (
     <main className="relative min-h-screen overflow-hidden">
+      <BackgroundStage opacity={0.5} />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-[-30%] mx-auto h-[70vh] w-[120vw] rounded-[50%] opacity-40 blur-3xl"

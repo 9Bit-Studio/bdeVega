@@ -57,7 +57,7 @@ function FloatingShapes() {
   );
 }
 
-export function BackgroundStage() {
+export function BackgroundStage({ opacity = 0.3 }: { opacity?: number }) {
   const [mounted, setMounted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -80,7 +80,7 @@ export function BackgroundStage() {
     <div aria-hidden className="absolute inset-0 overflow-hidden">
       <div className="absolute inset-0" style={{ background: "radial-gradient(90% 70% at 50% 20%, #241a1d 0%, #121014 65%)" }} />
       {mounted && !reducedMotion ? (
-        <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0" style={{ opacity }}>
           <Canvas frameloop={paused ? "never" : "always"} camera={{ position: [0, 0, 6], fov: 50 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: true }}>
             <ambientLight intensity={0.5} />
             <directionalLight position={[4, 6, 5]} intensity={1.4} color="#ffb347" />
