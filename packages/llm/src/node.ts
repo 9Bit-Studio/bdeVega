@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import type { FixtureRecord, FixtureStore } from "./types.js";
+export { generateOpenAIArtPack, type GeneratedArtImage, type OpenAIArtRequest } from "./art.js";
 
 export class FileFixtureStore implements FixtureStore {
   constructor(private readonly directory: string) {}

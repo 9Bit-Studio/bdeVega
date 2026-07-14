@@ -10,8 +10,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { getQuestionsForPrompt, type GenreQuestion } from "@vega/genres";
+import type { GameGenre } from "@vega/spec";
 
-type Genre = "platformer" | "endless-runner" | "top-down-collector";
+type Genre = GameGenre;
 type Provider = "openai" | "anthropic" | "gemini";
 
 export function LocalBuilder() {
@@ -134,7 +135,7 @@ export function LocalBuilder() {
             <h1>What should we build?</h1>
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} data-testid="prompt-input" />
             <div className="field-grid">
-              <label>Genre<select value={genre} onChange={(event) => setGenre(event.target.value as Genre)}><option value="platformer">Platformer</option><option value="endless-runner">Endless runner</option><option value="top-down-collector">Top-down collector</option></select></label>
+              <label>Genre<select value={genre} onChange={(event) => setGenre(event.target.value as Genre)}><option value="platformer">Platformer</option><option value="precision-platformer">Precision platformer</option><option value="obstacle-course">Obstacle course</option><option value="endless-runner">Endless runner</option><option value="arcade-racer">Arcade racer</option><option value="top-down-collector">Top-down collector</option><option value="score-attack">Score attack</option><option value="maze-escape">Maze escape</option><option value="puzzle-escape">Puzzle escape</option><option value="dungeon-escape">Dungeon escape</option><option value="survival-dodge">Survival dodge</option><option value="exploration">Exploration</option></select></label>
               <label>Provider<select value={provider} onChange={(event) => setProvider(event.target.value as Provider)}><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Gemini</option></select></label>
             </div>
             {!questionsOpen ? (

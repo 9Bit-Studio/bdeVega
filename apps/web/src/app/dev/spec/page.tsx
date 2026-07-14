@@ -1,4 +1,4 @@
-import { getGenreSpec } from "@vega/genres";
+import { genreCatalog, getGenreSpec } from "@vega/genres";
 import type { GameGenre } from "@vega/spec";
 
 import { SpecPreview } from "@/components/spec-preview";
@@ -9,7 +9,7 @@ interface SpecDevPageProps {
 
 export default async function SpecDevPage({ searchParams }: SpecDevPageProps) {
   const params = await searchParams;
-  const supported: GameGenre[] = ["platformer", "endless-runner", "top-down-collector"];
+  const supported: GameGenre[] = genreCatalog.map((entry) => entry.id);
   const genre = supported.includes(params.genre as GameGenre) ? params.genre as GameGenre : "platformer";
   const seed = Number(params.seed ?? 1);
   const spec = getGenreSpec(genre);

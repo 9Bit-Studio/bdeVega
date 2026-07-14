@@ -1,15 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { validateGameSpecForEngine } from "@vega/spec";
 
-import { genreQuestionBanks, genreSpecs, getGenreSpec, getQuestionsForPrompt } from "./index.js";
+import { createArtGenerationPlan, genreCatalog, genreQuestionBanks, genreSpecs, getGenreSpec, getQuestionsForPrompt, isMultiplayerPrompt } from "./index.js";
 
 describe("genre templates", () => {
-  it("ships exactly the three v1 genres", () => {
-    expect(Object.keys(genreSpecs).sort()).toEqual([
-      "endless-runner",
-      "platformer",
-      "top-down-collector",
-    ]);
+  it("ships the capability-backed genre set", () => {
+    expect(Object.keys(genreSpecs).sort()).toEqual(genreCatalog.map((entry) => entry.id).sort());
+  });
+
+  it("creates mode-aware art plans for every supported genre", () => {
+    for (const spec of Object.values(genreSpecs)) {
+      const plan = createArtGenerationPlan(spec, "An original game world");
+      expect(plan.mode).toBe(spec.world.mode);
+      expect(plan.playerPrompt).toContain("no copyrighted characters");
+      expect(plan.environmentPrompt).toContain(spec.world.theme);
+    }
+  });
+
+  it("detects multiplayer requests while allowing single-player prompts", () => {
+    expect(isMultiplayerPrompt("a two player co-op dungeon")).toBe(true);
+    expect(isMultiplayerPrompt("a single-player dungeon escape")).toBe(false);
   });
 
   it.each(Object.entries(genreSpecs))("validates the %s default", (_genre, spec) => {

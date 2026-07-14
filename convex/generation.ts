@@ -1,7 +1,8 @@
 "use node";
 
 import { createLLMClient, MemoryFixtureStore, type LLMResponse, type LLMProvider, type ModelTier } from "@vega/llm";
-import { genreSpecs } from "@vega/genres";
+import { generateOpenAIArtPack, type GeneratedArtImage } from "@vega/llm/node";
+import { createArtGenerationPlan, genreSpecs, getGenreCatalogEntry, isMultiplayerPrompt, type ArtGenerationPlan } from "@vega/genres";
 import {
   applyGameSpecPatch,
   gameSpecJsonSchema,
@@ -24,7 +25,12 @@ import { decryptApiKey } from "./lib/crypto";
 import { requireCurrentUser, requireGameOwner } from "./lib/authz";
 
 const providerValidator = v.union(v.literal("openai"), v.literal("anthropic"), v.literal("gemini"));
-const genreValidator = v.union(v.literal("platformer"), v.literal("endless-runner"), v.literal("top-down-collector"));
+const genreValidator = v.union(
+  v.literal("platformer"), v.literal("precision-platformer"), v.literal("obstacle-course"),
+  v.literal("endless-runner"), v.literal("arcade-racer"), v.literal("top-down-collector"),
+  v.literal("score-attack"), v.literal("maze-escape"), v.literal("puzzle-escape"),
+  v.literal("dungeon-escape"), v.literal("survival-dodge"), v.literal("exploration"),
+);
 const MAX_GENERATION_ATTEMPTS = 3;
 
 interface ValidationIssue {
@@ -46,6 +52,7 @@ interface VersionGenerationMetadata {
     repaired: boolean;
     issues: ValidationIssue[];
   };
+  art?: { generated: boolean; model: "gpt-image-2" | "starter-replay"; plan: ArtGenerationPlan };
   patch?: GameSpecPatch;
 }
 
@@ -131,6 +138,55 @@ async function llmCredentials(ctx: ActionCtx, userId: Id<"users">, provider: LLM
   return { apiKey: await decryptApiKey(stored.encryptedKey), replay };
 }
 
+async function storeGeneratedImage(
+  ctx: ActionCtx,
+  userId: Id<"users">,
+  kind: "player" | "background",
+  image: GeneratedArtImage,
+) {
+  const uploadUrl = await ctx.runMutation(internal.assets.createGeneratedUploadUrl, {});
+  const response = await fetch(uploadUrl, {
+    method: "POST",
+    headers: { "content-type": image.contentType },
+    body: Buffer.from(image.bytes),
+  });
+  if (!response.ok) throw new Error(`Generated ${kind} art upload returned ${response.status}`);
+  const { storageId } = await response.json() as { storageId: Id<"_storage"> };
+  return ctx.runMutation(internal.assets.registerGeneratedUpload, {
+    userId,
+    storageId,
+    kind,
+    generationPrompt: image.prompt,
+  });
+}
+
+async function createGeneratedArtPack(
+  ctx: ActionCtx,
+  userId: Id<"users">,
+  plan: ArtGenerationPlan,
+  replay: boolean,
+) {
+  if (replay) return { pack: starterAssetPack, model: "starter-replay" as const };
+  const stored = await ctx.runQuery(internal.apiKeys.getEncrypted, { userId, provider: "openai" });
+  if (!stored) throw new Error("An OpenAI API key is required for generated game art");
+  const generated = await generateOpenAIArtPack({
+    apiKey: await decryptApiKey(stored.encryptedKey),
+    playerPrompt: plan.playerPrompt,
+    environmentPrompt: plan.environmentPrompt,
+  });
+  const [playerUploadId, backgroundUploadId] = await Promise.all([
+    storeGeneratedImage(ctx, userId, "player", generated.player),
+    storeGeneratedImage(ctx, userId, "background", generated.environment),
+  ]);
+  const pack = await ctx.runMutation(internal.assets.createGeneratedPack, {
+    userId,
+    artDirection: plan.style,
+    playerUploadId,
+    backgroundUploadId,
+  });
+  return { pack, model: "gpt-image-2" as const };
+}
+
 export async function generateSpec(ctx: ActionCtx, input: {
   userId: Id<"users">;
   provider: LLMProvider;
@@ -139,6 +195,7 @@ export async function generateSpec(ctx: ActionCtx, input: {
   prompt: string;
   answers: Record<string, string>;
 }): Promise<{ spec: GameSpec; metadata: VersionGenerationMetadata }> {
+  if (isMultiplayerPrompt(input.prompt)) throw new Error("Multiplayer generation is not supported yet. Describe a single-player game instead.");
   const replaySpec = structuredClone(genreSpecs[input.genre]);
   const fixtureId = `golden-${input.genre}`;
   const fixtures = new MemoryFixtureStore({
@@ -183,15 +240,26 @@ export async function generateSpec(ctx: ActionCtx, input: {
     responses.push(response);
     const parsed = validateGameSpecForEngine(response.data);
     if (parsed.success) {
-      const spec = { ...parsed.data, assets: starterAssetPack };
+      const spec = { ...parsed.data, assets: starterAssetPack } as GameSpec;
+      const requestedMode = input.answers.dimension;
+      const supportedModes = getGenreCatalogEntry(input.genre).dimensions;
+      if (requestedMode && supportedModes.includes(requestedMode as GameSpec["world"]["mode"])) {
+        spec.world.mode = requestedMode as GameSpec["world"]["mode"];
+      }
+      const artPlan = createArtGenerationPlan(spec, input.prompt);
+      const art = await createGeneratedArtPack(ctx, input.userId, artPlan, replay);
+      spec.assets = art.pack;
+      if (spec.player.controller !== "platformer") spec.player.model = "sprite";
+      const metadata = aggregateMetadata(
+        input.prompt,
+        responses,
+        [...issueHistory, ...summarizeIssues(parsed.warnings)],
+        attempt,
+      );
+      metadata.art = { generated: !replay, model: art.model, plan: artPlan };
       return {
         spec,
-        metadata: aggregateMetadata(
-          input.prompt,
-          responses,
-          [...issueHistory, ...summarizeIssues(parsed.warnings)],
-          attempt,
-        ),
+        metadata,
       };
     }
 

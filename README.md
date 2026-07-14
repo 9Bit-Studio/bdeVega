@@ -7,7 +7,7 @@ Vega Forge is a local-first prompt-to-game platform. A validated `GameSpec` driv
 - `apps/web` — Next.js 15 builder, player, refine, and publish UI.
 - `apps/engine-playground` — Vite playground for editing and playing GameSpec JSON without AI.
 - `packages/spec` — Zod schemas, JSON Schema, validation, and repair loop.
-- `packages/genres` — working platformer, endless-runner, and collector defaults.
+- `packages/genres` — twelve capability-backed single-player genres with 2D, 2.5D, and 3D art plans.
 - `packages/engine` — spec-driven R3F/Rapier engine and test API.
 - `packages/llm` — OpenAI, Anthropic, and Gemini adapter with record/replay fixtures.
 - `services/verify-runner` — localhost Playwright verification API.

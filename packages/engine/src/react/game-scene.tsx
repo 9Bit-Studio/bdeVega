@@ -2,6 +2,7 @@ import { CuboidCollider, Physics, RigidBody, type RapierRigidBody } from "@react
 import type { GameSpec, LevelEntity } from "@vega/spec";
 import { useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useTexture } from "@react-three/drei";
 import { Group } from "three";
 import { useStore } from "zustand";
 
@@ -46,6 +47,16 @@ function MovingPlatform({ entity, position, color }: Pick<EntityMarkerProps, "en
       </mesh>
       <CuboidCollider args={[1.5, 0.2, 1.25]} />
     </RigidBody>
+  );
+}
+
+function GeneratedGroundArt({ imageUrl }: { imageUrl: string }) {
+  const texture = useTexture(imageUrl);
+  return (
+    <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <planeGeometry args={[36, 36]} />
+      <meshStandardMaterial map={texture} roughness={0.9} />
+    </mesh>
   );
 }
 
@@ -137,7 +148,11 @@ function EntityMarker({ entity, index, position, spec }: EntityMarkerProps) {
     } else if (entity.type === "checkpoint") {
       const state = store.getState();
       if (state.checkpointId !== checkpointId) {
-        state.activateCheckpoint(checkpointId, { x: position[0], y: position[1] + 1.2, z: position[2] });
+        state.activateCheckpoint(checkpointId, {
+          x: position[0],
+          y: spec.player.controller === "topdown" ? position[1] : position[1] + 1.2,
+          z: position[2],
+        });
         state.addScore(entity.points ?? spec.rules.scoring.find((rule) => rule.event === "checkpoint")?.points ?? 0);
       }
     } else if (entity.type === "trigger" && entity.trigger && !(triggered && entity.trigger.once)) {
@@ -222,6 +237,7 @@ export function GameScene({ spec }: GameSceneProps) {
       <CameraController spec={spec} />
       <TestApiBridge />
       {spec.camera.type === "side" ? <SkyBackdrop asset={spec.assets.background} /> : null}
+      {isCollector && spec.assets.id.startsWith("upload-pack:") ? <GeneratedGroundArt imageUrl={spec.assets.background.imageUrl} /> : null}
       <Physics gravity={spec.world.gravity}>
         <RigidBody type="fixed" colliders={false} position={isCollector ? [0, 0, 0] : [groundSize[0] / 2 - 10, -0.5, 0]}>
           <mesh receiveShadow>

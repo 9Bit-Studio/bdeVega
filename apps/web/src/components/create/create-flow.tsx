@@ -4,7 +4,7 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, Check, Dices, Gem, KeyRound, LoaderCircle, Mountain, RotateCcw, Sparkles, X, Zap } from "lucide-react";
+import { ArrowLeft, Check, Dices, Gem, KeyRound, LoaderCircle, Mountain, RotateCcw, Route, Sparkles, X, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
@@ -12,19 +12,38 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { useSession } from "@/components/app/session-provider";
 import { BackgroundStage } from "@/components/create/background-stage";
 import { getQuestionsForPrompt } from "@vega/genres";
+import type { GameGenre } from "@vega/spec";
 
-type Genre = "platformer" | "endless-runner" | "top-down-collector";
+type Genre = GameGenre;
 
 const GENRES: { id: Genre; label: string; icon: typeof Mountain }[] = [
   { id: "platformer", label: "Platformer", icon: Mountain },
+  { id: "precision-platformer", label: "Precision", icon: Mountain },
+  { id: "obstacle-course", label: "Obstacle Course", icon: Mountain },
   { id: "endless-runner", label: "Endless Runner", icon: Zap },
+  { id: "arcade-racer", label: "Arcade Racer", icon: Zap },
   { id: "top-down-collector", label: "Collector", icon: Gem },
+  { id: "score-attack", label: "Score Attack", icon: Gem },
+  { id: "maze-escape", label: "Maze Escape", icon: Route },
+  { id: "puzzle-escape", label: "Puzzle Escape", icon: Route },
+  { id: "dungeon-escape", label: "Dungeon Escape", icon: Route },
+  { id: "survival-dodge", label: "Survival Dodge", icon: Zap },
+  { id: "exploration", label: "Exploration", icon: Route },
 ];
 
 const CHIP_PROMPTS: Record<Genre, string> = {
   platformer: "A cheerful platformer where a tiny robot hops across floating gardens collecting stars",
+  "precision-platformer": "A precise 2D platformer through a crystal clockwork tower",
+  "obstacle-course": "A 3D obstacle course with moving lifts and glowing checkpoints",
   "endless-runner": "An endless runner where a fox dashes through a glowing forest dodging thorn bushes",
+  "arcade-racer": "A fast 3D arcade time trial through a neon canyon",
   "top-down-collector": "A top-down collector where a beachcomber crab gathers shells before the tide comes in",
+  "score-attack": "A bright arcade arena where risky routes multiply the score",
+  "maze-escape": "A neon maze escape where a courier activates checkpoints and avoids static fields",
+  "puzzle-escape": "A mysterious switch puzzle with gates and an ancient exit beacon",
+  "dungeon-escape": "A torchlit dungeon escape with traps, treasure, and checkpoints",
+  "survival-dodge": "A survival arena where a tiny ship dodges energy storms",
+  exploration: "A calm 3D exploration game about discovering luminous ruins",
 };
 
 const INSPIRE_PROMPTS = [
@@ -53,8 +72,17 @@ const THEME_SWATCHES: Record<string, string> = {
 
 function inferGenre(prompt: string): Genre {
   const text = prompt.toLowerCase();
-  if (/runner|running|dash|endless|dodge/.test(text)) return "endless-runner";
+  if (/survival|survive|arena|dodge/.test(text)) return "survival-dodge";
+  if (/race|racing|time trial/.test(text)) return "arcade-racer";
+  if (/precision|hard platform/.test(text)) return "precision-platformer";
+  if (/obstacle|obby|course/.test(text)) return "obstacle-course";
+  if (/puzzle|switch|logic/.test(text)) return "puzzle-escape";
+  if (/dungeon|crypt|vault/.test(text)) return "dungeon-escape";
+  if (/runner|running|dash|endless/.test(text)) return "endless-runner";
+  if (/explore|exploration|discover/.test(text)) return "exploration";
+  if (/score|arcade/.test(text)) return "score-attack";
   if (/collect|gather|hoard|scaveng/.test(text)) return "top-down-collector";
+  if (/maze|labyrinth|escape/.test(text)) return "maze-escape";
   return "platformer";
 }
 

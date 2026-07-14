@@ -55,8 +55,17 @@ export const gameAssetPackSchema = z.object({
 
 export const gameGenreSchema = z.enum([
   "platformer",
+  "precision-platformer",
+  "obstacle-course",
   "endless-runner",
+  "arcade-racer",
   "top-down-collector",
+  "score-attack",
+  "maze-escape",
+  "puzzle-escape",
+  "dungeon-escape",
+  "survival-dodge",
+  "exploration",
 ]);
 
 export const controlSchema = z.object({

@@ -1,13 +1,22 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Gem, Layers, Mountain, Play, Zap } from "lucide-react";
+import { Gem, Layers, Mountain, Play, Route, Zap } from "lucide-react";
 import Link from "next/link";
 
 const GENRE_META: Record<string, { label: string; icon: typeof Mountain; from: string; to: string }> = {
   platformer: { label: "Platformer", icon: Mountain, from: "#ff6b4a", to: "#8a2f4f" },
+  "precision-platformer": { label: "Precision", icon: Mountain, from: "#38bdf8", to: "#312e81" },
+  "obstacle-course": { label: "Obstacle Course", icon: Mountain, from: "#2dd4bf", to: "#164e63" },
   "endless-runner": { label: "Endless Runner", icon: Zap, from: "#ffb347", to: "#b0522a" },
+  "arcade-racer": { label: "Arcade Racer", icon: Zap, from: "#facc15", to: "#be123c" },
   "top-down-collector": { label: "Collector", icon: Gem, from: "#ff8f6b", to: "#5c2a52" },
+  "score-attack": { label: "Score Attack", icon: Gem, from: "#a3e635", to: "#3f6212" },
+  "maze-escape": { label: "Maze Escape", icon: Route, from: "#22d3ee", to: "#312e81" },
+  "puzzle-escape": { label: "Puzzle Escape", icon: Route, from: "#c084fc", to: "#581c87" },
+  "dungeon-escape": { label: "Dungeon Escape", icon: Route, from: "#fb923c", to: "#451a03" },
+  "survival-dodge": { label: "Survival Dodge", icon: Zap, from: "#f43f5e", to: "#4c0519" },
+  exploration: { label: "Exploration", icon: Route, from: "#34d399", to: "#064e3b" },
 };
 
 export interface GameCardData {

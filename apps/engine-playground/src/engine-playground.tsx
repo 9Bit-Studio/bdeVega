@@ -50,8 +50,17 @@ export function EnginePlayground() {
           Sample spec
           <select value={genre} onChange={(event) => selectGenre(event.target.value as GameGenre)}>
             <option value="platformer">Platformer</option>
+            <option value="precision-platformer">Precision platformer</option>
+            <option value="obstacle-course">Obstacle course</option>
             <option value="endless-runner">Endless runner</option>
+            <option value="arcade-racer">Arcade racer</option>
             <option value="top-down-collector">Top-down collector</option>
+            <option value="score-attack">Score attack</option>
+            <option value="maze-escape">Maze escape</option>
+            <option value="puzzle-escape">Puzzle escape</option>
+            <option value="dungeon-escape">Dungeon escape</option>
+            <option value="survival-dodge">Survival dodge</option>
+            <option value="exploration">Exploration</option>
           </select>
         </label>
       </header>

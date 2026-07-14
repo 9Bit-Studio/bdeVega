@@ -5,6 +5,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery, mutation, query, type MutationCtx } from "./_generated/server";
 import { requireCurrentUser } from "./lib/authz";
+import { isMultiplayerPrompt } from "@vega/genres";
 import {
   DAY_MS,
   MINUTE_MS,
@@ -16,7 +17,12 @@ import {
 } from "./lib/generationPolicy";
 
 const providerValidator = v.union(v.literal("openai"), v.literal("anthropic"), v.literal("gemini"));
-const genreValidator = v.union(v.literal("platformer"), v.literal("endless-runner"), v.literal("top-down-collector"));
+const genreValidator = v.union(
+  v.literal("platformer"), v.literal("precision-platformer"), v.literal("obstacle-course"),
+  v.literal("endless-runner"), v.literal("arcade-racer"), v.literal("top-down-collector"),
+  v.literal("score-attack"), v.literal("maze-escape"), v.literal("puzzle-escape"),
+  v.literal("dungeon-escape"), v.literal("survival-dodge"), v.literal("exploration"),
+);
 const generationStageValidator = v.union(v.literal("generating"), v.literal("persisting"), v.literal("verifying"));
 
 function quotaError(code: string, message: string, retryAt: number) {
@@ -73,6 +79,7 @@ export const start = mutation({
     answers: v.any(),
   },
   handler: async (ctx, input): Promise<{ jobId: Id<"generationJobs"> }> => {
+    if (isMultiplayerPrompt(input.prompt)) throw new ConvexError({ code: "MULTIPLAYER_UNSUPPORTED", message: "Multiplayer is not supported yet. Choose a single-player concept." });
     const userId = await requireCurrentUser(ctx);
     const settings = await ctx.db.query("userSettings").withIndex("by_user", (q) => q.eq("userId", userId)).unique();
     const provider = input.provider ?? settings?.defaultProvider ?? "openai";
