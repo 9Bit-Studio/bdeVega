@@ -1,13 +1,21 @@
+import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  ...authTables,
+  // Convex Auth's users table plus the app's own fields. `createdAt` is
+  // optional because auth-created users rely on _creationTime instead.
   users: defineTable({
-    name: v.string(),
-    email: v.string(),
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
     image: v.optional(v.string()),
-    createdAt: v.number(),
-  }).index("by_email", ["email"]),
+    emailVerificationTime: v.optional(v.number()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
+    createdAt: v.optional(v.number()),
+  }).index("email", ["email"]),
   apiKeys: defineTable({
     userId: v.id("users"),
     provider: v.string(),

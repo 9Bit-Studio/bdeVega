@@ -19,15 +19,19 @@ try {
     "API_KEY_ENCRYPTION_SECRET",
     "APP_URL",
     "DEV_MODEL_TIER",
+    "JWKS",
+    "JWT_PRIVATE_KEY",
+    "SITE_URL",
     "LLM_RECORD",
     "LLM_REPLAY",
     "PUBLISH_DRY_RUN",
     "VERCEL_TOKEN",
+    "VERCEL_TEAM_ID",
     "VERIFY_RUNNER_URL",
   ];
   const convexEnv = allowedKeys
     .filter((key) => values[key] !== undefined)
-    .map((key) => `${key}=${values[key]}`)
+    .map((key) => `${key}='${values[key]}'`)
     .join("\n");
   await writeFile(convexEnvPath, `${convexEnv}\n`, "utf8");
   await run("pnpm", ["exec", "convex", "env", "set", "--from-file", convexEnvPath]);

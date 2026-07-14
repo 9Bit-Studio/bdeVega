@@ -21,13 +21,13 @@ export default function HomePage() {
       <div className="mt-10 flex flex-wrap items-center gap-3">
         <Link
           href="/create"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="card-lift inline-flex items-center gap-2 rounded-xl gradient-warm px-5 py-3 font-display text-sm font-bold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Create a game <ArrowRight className="size-3.5" />
         </Link>
         <Link
           href="/games"
-          className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="card-lift inline-flex items-center gap-2 rounded-xl border border-border bg-card/60 px-5 py-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:border-primary/40"
         >
           My games
         </Link>

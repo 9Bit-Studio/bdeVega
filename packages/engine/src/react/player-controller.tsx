@@ -5,6 +5,7 @@ import type { GameSpec } from "@vega/spec";
 import { useRef } from "react";
 
 import { useGameStoreApi } from "./engine-context.js";
+import { SpritePlayer } from "./sprite-player.js";
 
 interface PlayerControllerProps {
   spec: GameSpec;
@@ -85,16 +86,18 @@ export function PlayerController({ spec }: PlayerControllerProps) {
       enabledTranslations={enabledTranslations}
       position={[0, spawnY, 0]}
     >
-      <mesh castShadow>
-        <capsuleGeometry args={[0.35, 0.8, 8, 16]} />
-        <meshStandardMaterial
-          color={spec.visuals.palette[0]}
-          emissive={spec.visuals.palette[0]}
-          emissiveIntensity={0.35}
-          metalness={0.45}
-          roughness={0.3}
-        />
-      </mesh>
+      {spec.player.model === "sprite" ? <SpritePlayer asset={spec.assets.player} /> : (
+        <mesh castShadow>
+          <capsuleGeometry args={[0.35, 0.8, 8, 16]} />
+          <meshStandardMaterial
+            color={spec.visuals.palette[0]}
+            emissive={spec.visuals.palette[0]}
+            emissiveIntensity={0.35}
+            metalness={0.45}
+            roughness={0.3}
+          />
+        </mesh>
+      )}
       <CapsuleCollider args={[0.4, 0.35]} />
     </RigidBody>
   );

@@ -51,6 +51,18 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* ambient warm depth on every page — coral glow top-left, amber bottom-right */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(90rem 50rem at 15% -10%, rgba(255, 107, 74, 0.09), transparent 60%),
+    radial-gradient(80rem 45rem at 110% 110%, rgba(255, 179, 71, 0.06), transparent 60%);
+}
+
 ::selection {
   background: var(--primary);
   color: var(--primary-foreground);
@@ -86,8 +98,34 @@ body {
   animation: shimmer 1.6s linear infinite;
 }
 
+/* interactive lift — every card/button responds within 50ms */
+.card-lift {
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, border-color 0.15s ease-out;
+}
+.card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px -8px rgba(255, 107, 74, 0.25), 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.card-lift:active {
+  transform: translateY(-1px) scale(0.99);
+  transition-duration: 0.05s;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 4px 20px -4px rgba(255, 107, 74, 0.35); }
+  50% { box-shadow: 0 4px 32px 2px rgba(255, 107, 74, 0.55); }
+}
+.glow-pulse { animation: glow-pulse 2.6s ease-in-out infinite; }
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.float-slow { animation: float-slow 5s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .skeleton { animation: none; }
+  .skeleton, .glow-pulse, .float-slow { animation: none; }
+  .card-lift, .card-lift:hover, .card-lift:active { transform: none; transition: none; }
 }
 
 /* --- legacy local dev harness (kept for offline e2e coverage) --- */

@@ -72,7 +72,7 @@ function Sidebar({ pathname }: { pathname: string }) {
       <motion.div {...springPress} className="mt-auto">
         <Link
           href="/create"
-          className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-warm px-4 py-3.5 font-display text-base font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-shadow hover:shadow-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="glow-pulse flex w-full items-center justify-center gap-2 rounded-2xl gradient-warm px-4 py-3.5 font-display text-base font-bold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <Plus className="size-5" strokeWidth={3} /> Create Game
         </Link>
@@ -181,7 +181,7 @@ function MobileTabBar({ pathname }: { pathname: string }) {
             aria-label="Create Game"
             className="flex items-center justify-center focus-visible:outline-none"
           >
-            <span className="grid size-11 -translate-y-3 place-items-center rounded-2xl gradient-warm text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background">
+            <span className="glow-pulse grid size-11 -translate-y-3 place-items-center rounded-2xl gradient-warm text-primary-foreground ring-4 ring-background">
               <Plus className="size-6" strokeWidth={3} />
             </span>
           </Link>

@@ -1,4 +1,4 @@
-import type { GameSpec } from "@vega/spec";
+import { starterAssetPack, type GameSpec } from "@vega/spec";
 
 export const endlessRunnerSpec = {
   schemaVersion: "1",
@@ -72,5 +72,6 @@ export const endlessRunnerSpec = {
     musicStyle: "synthwave",
     sfx: ["jump", "coin", "hit", "win", "lose"],
   },
+  assets: starterAssetPack,
   scripts: { custom: [] },
 } satisfies GameSpec;

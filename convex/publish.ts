@@ -65,7 +65,12 @@ export const publishToVercel = action({
 
     const token = process.env.VERCEL_TOKEN;
     if (!token) throw new Error("VERCEL_TOKEN is required when PUBLISH_DRY_RUN is false");
-    const response = await fetch("https://api.vercel.com/v13/deployments", {
+    // Publishing always uses this platform-owned credential. When the token
+    // can access more than one Vercel scope, pin it to our team as well.
+    const teamId = process.env.VERCEL_TEAM_ID;
+    const deployEndpoint = new URL("https://api.vercel.com/v13/deployments");
+    if (teamId) deployEndpoint.searchParams.set("teamId", teamId);
+    const response = await fetch(deployEndpoint, {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
       body: JSON.stringify(payload),

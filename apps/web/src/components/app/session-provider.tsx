@@ -2,55 +2,35 @@
 
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../convex/_generated/api";
-import { useMutation } from "convex/react";
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth, useQuery } from "convex/react";
+import { createContext, useContext, type ReactNode } from "react";
 
-const STORAGE_KEY = "vega.session";
-
-interface StoredSession {
+interface Session {
   userId: Id<"users">;
   name: string;
   email: string;
 }
 
 interface SessionContextValue {
-  session: StoredSession | null;
+  session: Session | null;
   ready: boolean;
-  signIn: (name: string, email: string) => Promise<void>;
   signOut: () => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const ensureUser = useMutation(api.localUsers.ensure);
-  const [session, setSession] = useState<StoredSession | null>(null);
-  const [ready, setReady] = useState(false);
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { signOut } = useAuthActions();
+  const user = useQuery(api.users.current, isAuthenticated ? {} : "skip");
 
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) setSession(JSON.parse(raw) as StoredSession);
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
-    setReady(true);
-  }, []);
-
-  const signIn = useCallback(async (name: string, email: string) => {
-    const userId = await ensureUser({ name, email });
-    const value = { userId, name, email };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
-    setSession(value);
-  }, [ensureUser]);
-
-  const signOut = useCallback(() => {
-    window.localStorage.removeItem(STORAGE_KEY);
-    setSession(null);
-  }, []);
+  const session: Session | null =
+    isAuthenticated && user ? { userId: user._id, name: user.name, email: user.email } : null;
+  const ready = !isLoading && (!isAuthenticated || user !== undefined);
 
   return (
-    <SessionContext.Provider value={{ session, ready, signIn, signOut }}>
+    <SessionContext.Provider value={{ session, ready, signOut: () => void signOut() }}>
       {children}
     </SessionContext.Provider>
   );

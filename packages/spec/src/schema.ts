@@ -6,6 +6,53 @@ const boundedNumberSchema = z.object({
   max: z.number(),
 });
 
+const assetUrlSchema = z.string().trim().min(1).max(500);
+
+/**
+ * The built-in pack keeps every generated game playable before a creator has
+ * uploaded or generated a bespoke pack. Asset URLs are deliberately supplied
+ * by the trusted asset pipeline, never invented by the language model.
+ */
+export const starterAssetPack = {
+  id: "stellar-trail-starter",
+  artDirection: "Original polished pixel-art skyport adventure with teal, coral, and midnight-blue contrast.",
+  player: {
+    imageUrl: "/assets/stellar-trail/courier.png",
+    width: 1.9,
+    height: 2.4,
+  },
+  background: {
+    imageUrl: "/assets/stellar-trail/skyport.png",
+    width: 28,
+    height: 15.75,
+  },
+  audio: {
+    musicUrl: null,
+    volume: 0.18,
+  },
+} as const;
+
+export const gameAssetPackSchema = z.object({
+  id: z.string().trim().min(1).max(80),
+  artDirection: z.string().trim().min(1).max(300),
+  player: z.object({
+    imageUrl: assetUrlSchema,
+    width: z.number().positive().max(10),
+    height: z.number().positive().max(10),
+  }),
+  background: z.object({
+    imageUrl: assetUrlSchema,
+    width: z.number().positive().max(100),
+    height: z.number().positive().max(100),
+  }),
+  audio: z.object({
+    // A null URL tells the engine to use the style-aware procedural preview.
+    // A generated/uploaded audio file replaces it without an engine change.
+    musicUrl: assetUrlSchema.nullable(),
+    volume: z.number().min(0).max(1),
+  }),
+});
+
 export const gameGenreSchema = z.enum([
   "platformer",
   "endless-runner",
@@ -114,6 +161,7 @@ export const gameSpecSchema = z.object({
     musicStyle: z.enum(["synthwave", "chiptune", "ambient", "orchestral-lite"]),
     sfx: z.array(z.enum(["jump", "coin", "hit", "win", "lose", "checkpoint"])).max(12),
   }),
+  assets: gameAssetPackSchema.default(starterAssetPack),
   scripts: z.object({
     custom: z.array(customScriptSchema).max(12),
   }),
@@ -123,6 +171,7 @@ export type GameGenre = z.infer<typeof gameGenreSchema>;
 export type GameSpec = z.infer<typeof gameSpecSchema>;
 export type GameControl = z.infer<typeof controlSchema>;
 export type LevelEntity = z.infer<typeof levelEntitySchema>;
+export type GameAssetPack = z.infer<typeof gameAssetPackSchema>;
 export type CustomScript = z.infer<typeof customScriptSchema>;
 
 export const expectationAssertionSchema = z.object({

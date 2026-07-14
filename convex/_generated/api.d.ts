@@ -9,13 +9,16 @@
  */
 
 import type * as apiKeys from "../apiKeys.js";
+import type * as auth from "../auth.js";
 import type * as games from "../games.js";
 import type * as generation from "../generation.js";
+import type * as http from "../http.js";
 import type * as lib_crypto from "../lib/crypto.js";
 import type * as localUsers from "../localUsers.js";
 import type * as publish from "../publish.js";
 import type * as seed from "../seed.js";
 import type * as settings from "../settings.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -25,13 +28,16 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   apiKeys: typeof apiKeys;
+  auth: typeof auth;
   games: typeof games;
   generation: typeof generation;
+  http: typeof http;
   "lib/crypto": typeof lib_crypto;
   localUsers: typeof localUsers;
   publish: typeof publish;
   seed: typeof seed;
   settings: typeof settings;
+  users: typeof users;
 }>;
 
 /**

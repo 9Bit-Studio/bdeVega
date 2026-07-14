@@ -2,7 +2,7 @@
 
 import { createLLMClient, MemoryFixtureStore } from "@vega/llm";
 import { genreSpecs } from "@vega/genres";
-import { gameSpecJsonSchema, validateGameSpec, type GameExpectations, type GameGenre, type GameSpec } from "@vega/spec";
+import { gameSpecJsonSchema, starterAssetPack, validateGameSpec, type GameExpectations, type GameGenre, type GameSpec } from "@vega/spec";
 import { action, type ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -78,7 +78,11 @@ async function generateSpec(ctx: ActionCtx, input: {
     jsonSchema: gameSpecJsonSchema as Record<string, unknown>,
   });
   const parsed = validateGameSpec(response.data);
-  return parsed.success ? parsed.data : fallback;
+  const spec = parsed.success ? parsed.data : fallback;
+  // The LLM may describe a style, but it must never invent a URL or select an
+  // unreviewed file. A trusted asset service will replace this starter pack
+  // once a generated or uploaded pack has completed review.
+  return { ...spec, assets: starterAssetPack };
 }
 
 export const start = action({

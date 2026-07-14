@@ -7,6 +7,7 @@ import { ACESFilmicToneMapping } from "three";
 import { createInputBindings } from "../core/input.js";
 import { createGameStore } from "../store/game-store.js";
 import { GameStoreProvider } from "./engine-context.js";
+import { GameAudio } from "./game-audio.js";
 import { GameHud } from "./game-hud.js";
 import { GameScene } from "./game-scene.js";
 
@@ -37,6 +38,7 @@ export function GameRoot({ autoStart = true, className, spec }: GameRootProps) {
         <section className={`vega-game-root${className ? ` ${className}` : ""}`} aria-label={spec.meta.title}>
           <style>{engineStyles}</style>
           <GameHud />
+          <GameAudio assets={spec.assets} style={spec.audio.musicStyle} />
           <div className="vega-canvas" data-game-canvas>
             <Canvas
               camera={{ fov: 50, position: [0, 5, 12] }}

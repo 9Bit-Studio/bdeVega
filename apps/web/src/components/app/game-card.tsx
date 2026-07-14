@@ -27,7 +27,7 @@ export function GameCard({ game }: { game: GameCardData }) {
       href={`/games/${game._id}`}
       className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <div className="relative aspect-video overflow-hidden rounded-xl border border-border">
+      <div className="card-lift relative aspect-video overflow-hidden rounded-xl border border-border group-hover:border-primary/40">
         {/* Procedural cover stands in until engine thumbnails are captured */}
         <div
           className="absolute inset-0 transition-transform duration-300 ease-out group-hover:scale-[1.03] group-focus-visible:scale-[1.03]"
@@ -86,7 +86,7 @@ export function EmptyGames({ title = "No games yet — let’s fix that" }: { ti
       <motion.span whileTap={{ scale: 0.96 }} className="mt-6 inline-block">
         <Link
           href="/create"
-          className="inline-flex items-center gap-2 rounded-xl gradient-warm px-5 py-2.5 font-display font-bold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="card-lift inline-flex items-center gap-2 rounded-xl gradient-warm px-5 py-2.5 font-display font-bold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           ＋ Create a game
         </Link>

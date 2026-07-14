@@ -1,4 +1,4 @@
-import type { GameSpec } from "@vega/spec";
+import { starterAssetPack, type GameSpec } from "@vega/spec";
 
 export const platformerSpec = {
   schemaVersion: "1",
@@ -23,7 +23,7 @@ export const platformerSpec = {
     jumpForce: 8.5,
     doubleJump: true,
     lives: 3,
-    model: "capsule",
+    model: "sprite",
   },
   controls: [
     { key: "KeyA", action: "left", purpose: "Run left" },
@@ -69,11 +69,12 @@ export const platformerSpec = {
       { event: "jump", preset: "cloud-puff" },
       { event: "coin", preset: "star-burst" },
     ],
-    palette: ["#77d4fc", "#fef08a", "#fb7185", "#f8fafc"],
+    palette: ["#2dd4bf", "#fb923c", "#15233d", "#070d1d"],
   },
   audio: {
     musicStyle: "chiptune",
     sfx: ["jump", "coin", "hit", "checkpoint", "win", "lose"],
   },
+  assets: starterAssetPack,
   scripts: { custom: [] },
 } satisfies GameSpec;

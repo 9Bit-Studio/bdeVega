@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { validateGameSpecWithRepair } from "./repair.js";
+import { starterAssetPack } from "./schema.js";
 
 const fallback = {
   schemaVersion: "1" as const,
@@ -25,6 +26,7 @@ const fallback = {
   rules: { winCondition: "Reach goal", loseCondition: "Lose lives", scoring: [], timer: null },
   visuals: { lighting: "day", postfx: [], particles: [], palette: ["#ffffff", "#000000"] },
   audio: { musicStyle: "chiptune" as const, sfx: [] },
+  assets: starterAssetPack,
   scripts: { custom: [] },
 };
 

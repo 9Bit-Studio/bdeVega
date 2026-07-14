@@ -47,7 +47,19 @@ export const getCurrent = query({
     const game = await ctx.db.get(input.gameId);
     if (!game?.currentVersionId) return null;
     const version = await ctx.db.get(game.currentVersionId);
-    return version ? { game, version } : null;
+    if (!version) return null;
+
+    // A published URL is only valid for the version it was built from. This
+    // prevents the player from showing an older Vercel build after a refine.
+    const publishes = await ctx.db
+      .query("publishes")
+      .withIndex("by_game", (query) => query.eq("gameId", input.gameId))
+      .collect();
+    const published = publishes
+      .filter((publish) => publish.versionId === version._id && publish.status === "ready")
+      .sort((a, b) => b.createdAt - a.createdAt)[0];
+
+    return { game, version, publishedUrl: published?.url ?? null };
   },
 });
 

@@ -8,6 +8,7 @@ import { CameraController } from "./camera-controller.js";
 import { CoinField, type CoinItem } from "./coin-field.js";
 import { useGameStoreApi } from "./engine-context.js";
 import { PlayerController } from "./player-controller.js";
+import { SkyBackdrop } from "./sky-backdrop.js";
 import { TestApiBridge } from "./test-api-bridge.js";
 
 interface GameSceneProps {
@@ -145,6 +146,7 @@ export function GameScene({ spec }: GameSceneProps) {
       />
       <CameraController spec={spec} />
       <TestApiBridge />
+      {spec.camera.type === "side" ? <SkyBackdrop asset={spec.assets.background} /> : null}
       <Physics gravity={spec.world.gravity}>
         <RigidBody type="fixed" colliders={false} position={isCollector ? [0, 0, 0] : [groundSize[0] / 2 - 10, -0.5, 0]}>
           <mesh receiveShadow>

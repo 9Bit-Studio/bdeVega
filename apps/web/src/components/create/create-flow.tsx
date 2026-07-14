@@ -84,6 +84,19 @@ export function CreateFlow() {
     return () => clearInterval(timer);
   }, [reducedMotion]);
 
+  // pick up a prompt drafted on the logged-out landing page
+  useEffect(() => {
+    try {
+      const draft = window.sessionStorage.getItem("vega.draftPrompt");
+      if (draft) {
+        window.sessionStorage.removeItem("vega.draftPrompt");
+        setPrompt((current) => current || draft);
+      }
+    } catch {
+      // storage unavailable — start blank
+    }
+  }, []);
+
   useEffect(() => {
     if (phase !== "building") return;
     const timer = setInterval(() => setBuildStep((current) => Math.min(current + 1, 2)), 2600);

@@ -72,7 +72,7 @@ export default function GamePlayerPage() {
     return <div className="grid flex-1 place-items-center text-muted-foreground">Game not found.</div>;
   }
 
-  const { game, version } = current;
+  const { game, version, publishedUrl } = current;
   const verify = version.verifyResult as { pass?: boolean; pending?: boolean; failures?: { message?: string }[] } | undefined;
   const verifying = Boolean(verify?.pending) || busy === "refine";
 
@@ -92,7 +92,7 @@ export default function GamePlayerPage() {
         <div className={`overflow-hidden rounded-2xl border bg-[#0b090d] transition-shadow duration-500 ${verifying ? "glow-coral border-primary/50" : "border-border"}`}>
           <iframe
             key={version._id}
-            src={`/play/${gameId}`}
+            src={publishedUrl ?? `/play/${gameId}`}
             title={game.title}
             sandbox="allow-scripts allow-pointer-lock allow-same-origin"
             data-testid="app-game-iframe"
@@ -102,6 +102,7 @@ export default function GamePlayerPage() {
         <div className="mt-4 flex flex-wrap items-center gap-3 px-1">
           <h1 className="min-w-0 flex-1 truncate font-display text-2xl font-bold tracking-tight">{game.title}</h1>
           <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-accent">{game.genre}</span>
+          {publishedUrl ? <span className="rounded-full border border-accent/30 px-3 py-1 text-xs font-medium text-accent">Hosted on Vercel</span> : null}
           <button
             type="button"
             onClick={() => setPublic({ gameId, isPublic: !game.isPublic })}
